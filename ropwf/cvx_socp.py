@@ -113,7 +113,7 @@ def socp_separated(x, y, splits, degree, lb, ub, objective,
         constraints = []
         if monotonic_trend:
             mono_cons = _monotonic_trend_constraints(
-                monotonic_trend, ci, Di, None)
+                monotonic_trend, ci, Di, splits, order)
             constraints.append(mono_cons)
 
         bound_constraints = _bound_constraints(Ai, ci, lb, ub)
