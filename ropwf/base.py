@@ -1,3 +1,10 @@
+"""
+Robust piecewise regression.
+"""
+
+# Guillermo Navas-Palencia <g.navas.palencia@gmail.com>
+# Copyright (C) 2020
+
 import numbers
 
 import numpy as np
@@ -135,6 +142,49 @@ def _check_splits(splits):
 
 
 class RobustPWRegression(BaseEstimator):
+    """Robust piecewise regression.
+
+    Parameters
+    ----------
+    objective : str, optional (default="l2")
+        The objective function. Supported objectives are "l2", "l1", "huber"
+        and "quantile". Note that "l1", "huber" and "quantile" are robust
+        objective functions.
+
+    degree : int (default=1)
+        The degree of the polynomials.
+
+        * degree = 0: piecewise constant functions.
+        * degree = 1: piecewise linear functions.
+        * degree > 1: piecewise polynomial functions.
+
+    continuous : bool (default=True)
+        Whether to fit a continuous or discontinuous piecewise regression.
+
+    monotonic_trend : str or None, optional (default=None)
+        The monotonic trend. Supported trends are "ascending", "descending",
+        "convex" and "concave". If None, then the monotonic constraint is
+        disabled.
+
+    solver : str, optional (default="auto")
+        The optimizer to solve the underlying mathematical optimization
+        problem. Supported solvers are `"ecos"
+        <https://github.com/embotech/ecos>`_, `"osqp"
+        <https://github.com/oxfordcontrol/osqp>`_, "direct", to choose the
+        direct solver, and "auto", to choose the most appropriate solver for
+        the problem.
+
+    h_epsilon: float (default=1.35)
+        The parameter h_epsilon used when ``objective="huber"``, controls the
+        number of samples that should be classified as outliers.
+
+    quantile : float (default=0.5)
+        The parameter quantile is the q-th quantile to be used when
+        ``objective="quantile"``.
+
+    verbose : bool (default=False)
+        Enable verbose output.
+    """
     def __init__(self, objective="l2", degree=1, continuous=True,
                  monotonic_trend=None, solver="auto", h_epsilon=1.35,
                  quantile=0.5, verbose=False):
@@ -153,6 +203,22 @@ class RobustPWRegression(BaseEstimator):
         self._is_fitted = False
 
     def fit(self, x, y, splits, lb=None, ub=None):
+        """Fit the piecewise regression according to the given training data.
+
+        Parameters
+        ----------
+        x : array-like, shape = (n_samples,)
+            Training vector, where n_samples is the number of samples.
+
+        y : array-like, shape = (n_samples,)
+            Target vector relative to x.
+
+        lb : float or None (default=None)
+            Add constraints to avoid values below the lower bound lb.
+
+        ub : float or None (default=None)
+            Add constraints to avoid values above the upper bound ub.
+        """
         _check_parameters(**self.get_params())
 
         # Check inputs x and y
@@ -201,9 +267,53 @@ class RobustPWRegression(BaseEstimator):
         return self
 
     def fit_predict(self, x, y, splits, lb=None, ub=None):
+        """Fit the piecewise regression according to the given training data,
+        then predict.
+
+        Parameters
+        ----------
+        x : array-like, shape = (n_samples,)
+            Training vector, where n_samples is the number of samples.
+
+        y : array-like, shape = (n_samples,)
+            Target vector relative to x.
+
+        lb : float or None (default=None)
+            Fit impose constraints to satisfy that values are greater or equal
+            than lb. In predict, values below the lower bound lb are clipped to
+            lb.
+
+        ub : float or None (default=None)
+            Fit impose constraints to satisfy that values are less or equal
+            than ub. In predict, values above the upper bound ub are clipped to
+            ub.
+
+        Returns
+        -------
+        p : numpy array, shape = (n_samples,)
+            Predicted array.
+        """
         return self.fit(x, y, splits, lb, ub).predict(x, lb, ub)
 
     def predict(self, x, lb=None, ub=None):
+        """Predict using the piecewise regression.
+
+        Parameters
+        ----------
+        x : array-like, shape = (n_samples,)
+            Training vector, where n_samples is the number of samples.
+
+        lb : float or None (default=None)
+            Values below the lower bound lb are clipped to lb.
+
+        ub : float or None (default=None)
+            Values above the upper bound ub are clipped to ub.
+
+        Returns
+        -------
+        p : numpy array, shape = (n_samples,)
+            Predicted array.
+        """
         if not self._is_fitted:
             raise NotFittedError("This {} instance is not fitted yet. Call "
                                  "'fit' with appropriate arguments."
