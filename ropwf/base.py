@@ -239,7 +239,7 @@ class RobustPWRegression(BaseEstimator):
         if bounded:
             _check_bounds(lb, ub)
 
-        # Choose the most appropiate method/solver given the parameters
+        # Choose the most appropriate method/solver given the parameters
         _method = _choose_method(self.objective, self.degree, self.continuous,
                                  self.monotonic_trend, self.solver, bounded)
 
