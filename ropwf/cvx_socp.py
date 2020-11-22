@@ -1,10 +1,11 @@
 import cvxpy as cp
 import numpy as np
 
-from .cvx import _bound_constraints
 from .cvx import _monotonic_trend_constraints
 from .matrices import matrix_A
 from .matrices import matrix_A_D
+from .matrices import matrix_CC
+from .matrices import matrix_D0
 from .matrices import matrix_S
 from .matrices import submatrix_A
 from .matrices import submatrix_A_D
@@ -33,7 +34,14 @@ def socp(x, y, splits, degree, lb, ub, objective, monotonic_trend, h_epsilon,
     order = degree + 1
 
     if monotonic_trend in ("ascending", "descending"):
-        A, D = matrix_A_D(x, splits, order)
+        if order == 1:
+            A = matrix_A(x, splits, order)
+            D = matrix_D0(splits)
+        else:
+            A, D = matrix_A_D(x, splits, order)
+    elif monotonic_trend in ("convex", "concave"):
+        A = matrix_A(x, splits, order)
+        D = matrix_CC(splits)
     else:
         A = matrix_A(x, splits, order)
         D = None
@@ -51,13 +59,13 @@ def socp(x, y, splits, degree, lb, ub, objective, monotonic_trend, h_epsilon,
     constraints.append(S * c == 0)
 
     if monotonic_trend:
-        mono_cons = _monotonic_trend_constraints(
-            monotonic_trend, c, D, splits, order)
+        mono_cons = _monotonic_trend_constraints(monotonic_trend, c, D, order)
         constraints.append(mono_cons)
 
-    bound_constraints = _bound_constraints(A, c, lb, ub)
-    if bound_constraints:
-        constraints.extend(bound_constraints)
+    if lb is not None:
+        constraints.append(A * c >= lb)
+    if ub is not None:
+        constraints.append(A * c <= ub)
 
     # Solve
     prob = cp.Problem(obj, constraints)
@@ -113,12 +121,13 @@ def socp_separated(x, y, splits, degree, lb, ub, objective,
         constraints = []
         if monotonic_trend:
             mono_cons = _monotonic_trend_constraints(
-                monotonic_trend, ci, Di, splits, order)
+                monotonic_trend, ci, Di, order)
             constraints.append(mono_cons)
 
-        bound_constraints = _bound_constraints(Ai, ci, lb, ub)
-        if bound_constraints:
-            constraints.extend(bound_constraints)
+        if lb is not None:
+            constraints.append(Ai * ci >= lb)
+        if ub is not None:
+            constraints.append(Ai * ci <= ub)
 
         prob = cp.Problem(obj, constraints)
         prob.solve(solver=_solver, verbose=verbose)
