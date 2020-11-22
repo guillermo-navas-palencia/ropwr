@@ -1,3 +1,11 @@
+"""
+Auxiliary functions for cvxpy formulations.
+"""
+
+# Guillermo Navas-Palencia <g.navas.palencia@gmail.com>
+# Copyright (C) 2020
+
+
 def _monotonic_trend_constraints(monotonic_trend, c, D, order):
     if monotonic_trend == "ascending":
         if order == 2:

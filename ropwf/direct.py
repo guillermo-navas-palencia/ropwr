@@ -1,3 +1,11 @@
+"""
+Direct method for piecewise regression with l2-norm objective and no other
+constraints.
+"""
+
+# Guillermo Navas-Palencia <g.navas.palencia@gmail.com>
+# Copyright (C) 2020
+
 import numpy as np
 
 from .matrices import submatrix_A

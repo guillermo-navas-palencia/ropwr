@@ -1,3 +1,10 @@
+"""
+Auxiliary functions to create model matrices.
+"""
+
+# Guillermo Navas-Palencia <g.navas.palencia@gmail.com>
+# Copyright (C) 2020
+
 import numpy as np
 
 
@@ -99,6 +106,18 @@ def matrix_CC(splits):
         CC[i, [i * 2 + 1, i * 2 + 3]] = [-1, 1]
 
     return CC
+
+
+def matrix_D0(splits):
+    n_splits = len(splits)
+    n_bins = n_splits + 1
+
+    D = np.zeros((n_splits, n_bins))
+
+    for i in range(n_splits):
+        D[i, [i, i + 1]] = [-1, 1]
+
+    return D
 
 
 def submatrix_A(ni, xi, order):

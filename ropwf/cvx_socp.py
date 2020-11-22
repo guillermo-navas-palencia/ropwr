@@ -1,3 +1,11 @@
+"""
+General Second-order Cone Programming (SOCP) formulation for piecewise
+regression.
+"""
+
+# Guillermo Navas-Palencia <g.navas.palencia@gmail.com>
+# Copyright (C) 2020
+
 import cvxpy as cp
 import numpy as np
 

@@ -19,6 +19,7 @@ from .direct import lsq_direct_separated
 from .cvx_socp import socp
 from .cvx_socp import socp_separated
 from .cvx_qp import qp
+from .cvx_qp import qp_separated
 
 
 def _check_parameters(objective, degree, continuous, monotonic_trend, solver,
@@ -42,9 +43,9 @@ def _check_parameters(objective, degree, continuous, monotonic_trend, solver,
                              'string values are "ascending", "descending", '
                              '"convex" and "concave".')
 
-        if monotonic_trend in ("convex", "concave") and degree > 1:
+        if monotonic_trend in ("convex", "concave") and degree != 1:
             raise ValueError('Option monotonic trend "convex" and "concave" '
-                             'valid if degree <= 1.')
+                             'valid if degree = 1.')
 
         if monotonic_trend in ("convex", "concave") and not continuous:
             raise ValueError('Option monotonic trend "convex" and "concave" '
@@ -71,13 +72,10 @@ def _choose_method(objective, degree, continuous, monotonic_trend, solver,
 
     if solver == "auto":
         if bounded:
-            if objective == "l2" and not continuous:
-                return "qp"
+            if continuous:
+                return "socp"
             else:
-                if continuous:
-                    return "socp"
-                else:
-                    return "socp_separated"
+                return "socp_separated"
         else:
             if objective == "l2":
                 if monotonic_trend is None:
@@ -89,7 +87,7 @@ def _choose_method(objective, degree, continuous, monotonic_trend, solver,
                     if continuous:
                         return "qp"
                     else:
-                        return "socp_separated"
+                        return "qp_separated"
             else:
                 if continuous:
                     return "socp"
@@ -97,17 +95,21 @@ def _choose_method(objective, degree, continuous, monotonic_trend, solver,
                     return "socp_separated"
     elif solver == "direct":
         if objective != "l2" or monotonic_trend is not None or bounded:
-            raise ValueError("")
+            raise ValueError('solver "direct" only for objective="l2", '
+                             'monotonic_trend=None and lb=ub=None.')
         else:
             if continuous:
                 return "lsq_direct"
             else:
                 return "lsq_direct_separated"
     elif solver == "osqp":
-        if objective == "l2" and continuous:
-            return "qp"
+        if objective == "l2":
+            if continuous:
+                return "qp"
+            else:
+                return "qp_separated"
         else:
-            return "socp"
+            raise ValueError('solver="osqp" only for objective="l2".')
     elif solver == "ecos":
         if continuous:
             return "socp"
@@ -116,13 +118,15 @@ def _choose_method(objective, degree, continuous, monotonic_trend, solver,
 
 
 def _check_bounds(lb, ub):
-    if not isinstance(lb, numbers.Number):
-        raise TypeError("lb must be a number or None; got {}."
-                        .format(type(bool)))
+    if lb is not None:
+        if not isinstance(lb, numbers.Number):
+            raise TypeError("lb must be a number or None; got {}."
+                            .format(type(bool)))
 
-    if not isinstance(ub, numbers.Number):
-        raise TypeError("ub must be a number or None; got {}."
-                        .format(type(bool)))
+    if ub is not None:
+        if not isinstance(ub, numbers.Number):
+            raise TypeError("ub must be a number or None; got {}."
+                            .format(type(bool)))
 
     if lb is not None and ub is not None:
         if lb > ub:
@@ -257,8 +261,11 @@ class RobustPWRegression(BaseEstimator):
                                self.h_epsilon, self.quantile,
                                self.solver, self.verbose)
         elif _method == "qp":
-            c = qp(xs, ys, splits, self.degree, lb, ub, self.objective,
-                   self.monotonic_trend, self.verbose)
+            c = qp(xs, ys, splits, self.degree, lb, ub, self.monotonic_trend,
+                   self.verbose)
+        elif _method == "qp_separated":
+            c = qp_separated(xs, ys, splits, self.degree, lb, ub,
+                             self.monotonic_trend, self.verbose)
 
         self.coef_ = c
         self._splits = splits

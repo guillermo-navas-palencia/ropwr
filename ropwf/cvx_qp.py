@@ -1,3 +1,11 @@
+"""
+Quadratic programming (QP) formulation for piecewise regression with l2-norm
+objective.
+"""
+
+# Guillermo Navas-Palencia <g.navas.palencia@gmail.com>
+# Copyright (C) 2020
+
 import cvxpy as cp
 import numpy as np
 
