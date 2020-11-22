@@ -1,31 +1,32 @@
 =====
-RoPWF
+RoPWR
 =====
 
-Robust piecewise regression.
+**RoPWR** is a library written in Python implementing several mathematical programming formulations to compute the optimal continuous/discontinuous piecewise 
+polynomial regression given a list of split points.
 
 .. contents:: **Table of Contents**
 
 Installation
 ============
 
-To install the current release of RoPWF from PyPI:
+To install the current release of ropwr from PyPI:
 
 .. code-block:: text
 
-   pip install ropwf
+   pip install ropwr
 
 To install from source, download or clone the git repository
 
 .. code-block:: text
 
-   git clone https://github.com/guillermo-navas-palencia/ropwf.git
-   cd ropwf
+   git clone https://github.com/guillermo-navas-palencia/ropwr.git
+   cd ropwr
    python setup.py install
 
 Dependencies
 ------------
-RoPWF requires
+ropwr requires
 
 * cvxpy (>=1.0)
 * numpy (>=1.16)
