@@ -54,7 +54,12 @@ def lsq_direct(x, y, splits, degree):
 
     c = np.linalg.solve(M, d)
 
-    return c[:nA].reshape((n_bins, order))
+    info = {
+        "status": "optimal",
+        "stats": {"n_variables": nA, "n_constraints": nM}
+    }
+
+    return c[:nA].reshape((n_bins, order)), info
 
 
 def lsq_direct_separated(x, y, splits, degree):
@@ -65,6 +70,7 @@ def lsq_direct_separated(x, y, splits, degree):
 
     c = np.zeros((n_bins, order))
 
+    infos = []
     for i in range(n_bins):
         mask = (indices == i)
         xi = x[mask]
@@ -73,6 +79,13 @@ def lsq_direct_separated(x, y, splits, degree):
         Ai = submatrix_A(ni, xi, order)
 
         ci, _, _, _ = np.linalg.lstsq(Ai, yi, rcond=None)
+
+        info = {
+            "status": "optimal",
+            "stats": {"n_variables": order, "n_constraints": 0}
+        }
+        infos.append(info)
+
         c[i, :] = ci
 
-    return c
+    return c, infos

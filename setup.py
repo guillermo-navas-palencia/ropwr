@@ -8,6 +8,9 @@ from setuptools.command.test import test as TestCommand
 
 
 long_description = '''
+**RoPWR** is a library written in Python implementing several mathematical
+programming formulations to compute the optimal continuous/discontinuous
+piecewise polynomial regression given a list of split points.
 
 Read the documentation at: http://gnpalencia.org/ropwr/
 

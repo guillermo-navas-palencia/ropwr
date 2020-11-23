@@ -9,6 +9,7 @@ regression.
 import cvxpy as cp
 import numpy as np
 
+from .cvx import _problem_info
 from .cvx import _monotonic_trend_constraints
 from .matrices import matrix_A
 from .matrices import matrix_A_D
@@ -63,8 +64,9 @@ def socp(x, y, splits, degree, lb, ub, objective, monotonic_trend, h_epsilon,
 
     # Constraints
     constraints = []
-    S = matrix_S(x, splits, order)
-    constraints.append(S * c == 0)
+    if n_bins > 1:
+        S = matrix_S(x, splits, order)
+        constraints.append(S * c == 0)
 
     if monotonic_trend:
         mono_cons = _monotonic_trend_constraints(monotonic_trend, c, D, order)
@@ -86,8 +88,11 @@ def socp(x, y, splits, degree, lb, ub, objective, monotonic_trend, h_epsilon,
         _solver = cp.ECOS
 
     prob.solve(solver=_solver, verbose=verbose)
+    size_metrics = cp.problems.problem.SizeMetrics(prob)
+    status = prob.status
+    info = _problem_info(status, size_metrics)
 
-    return c.value.reshape((n_bins, order))
+    return c.value.reshape((n_bins, order)), info
 
 
 def socp_separated(x, y, splits, degree, lb, ub, objective,
@@ -107,6 +112,7 @@ def socp_separated(x, y, splits, degree, lb, ub, objective,
 
     c = np.zeros((n_bins, order))
 
+    infos = []
     for i in range(n_bins):
         mask = (indices == i)
         xi = x[mask]
@@ -140,6 +146,11 @@ def socp_separated(x, y, splits, degree, lb, ub, objective,
         prob = cp.Problem(obj, constraints)
         prob.solve(solver=_solver, verbose=verbose)
 
+        size_metrics = cp.problems.problem.SizeMetrics(prob)
+        status = prob.status
+        info = _problem_info(status, size_metrics)
+        infos.append(info)
+
         c[i, :] = ci.value
 
-    return c
+    return c, infos

@@ -134,15 +134,22 @@ def _check_bounds(lb, ub):
 
 
 def _check_splits(splits):
-    user_splits = check_array(splits, ensure_2d=False, force_all_finite=True)
+    if not isinstance(splits, (list, np.ndarray)):
+        raise TypeError("splits must be a list or numpy.ndarray.")
 
-    if len(set(user_splits)) != len(user_splits):
-        raise ValueError("splits are not unique.")
+    if not len(splits):
+        return splits
+    else:
+        user_splits = check_array(splits, ensure_2d=False,
+                                  force_all_finite=True)
 
-    sorted_idx = np.argsort(user_splits)
-    user_splits = user_splits[sorted_idx]
+        if len(set(user_splits)) != len(user_splits):
+            raise ValueError("splits are not unique.")
 
-    return user_splits
+        sorted_idx = np.argsort(user_splits)
+        user_splits = user_splits[sorted_idx]
+
+        return user_splits
 
 
 class RobustPWRegression(BaseEstimator):
@@ -248,26 +255,34 @@ class RobustPWRegression(BaseEstimator):
                                  self.monotonic_trend, self.solver, bounded)
 
         if _method == "lsq_direct":
-            c = lsq_direct(xs, ys, splits, self.degree)
+            c, info = lsq_direct(xs, ys, splits, self.degree)
         elif _method == "lsq_direct_separated":
-            c = lsq_direct_separated(xs, ys, splits, self.degree)
+            c, info = lsq_direct_separated(xs, ys, splits, self.degree)
         elif _method == "socp":
-            c = socp(xs, ys, splits, self.degree, lb, ub, self.objective,
-                     self.monotonic_trend, self.h_epsilon, self.quantile,
-                     self.solver, self.verbose)
+            c, info = socp(xs, ys, splits, self.degree, lb, ub, self.objective,
+                           self.monotonic_trend, self.h_epsilon, self.quantile,
+                           self.solver, self.verbose)
         elif _method == "socp_separated":
-            c = socp_separated(xs, ys, splits, self.degree, lb, ub,
-                               self.objective, self.monotonic_trend,
-                               self.h_epsilon, self.quantile,
-                               self.solver, self.verbose)
+            c, info = socp_separated(xs, ys, splits, self.degree, lb, ub,
+                                     self.objective, self.monotonic_trend,
+                                     self.h_epsilon, self.quantile,
+                                     self.solver, self.verbose)
         elif _method == "qp":
-            c = qp(xs, ys, splits, self.degree, lb, ub, self.monotonic_trend,
-                   self.verbose)
+            c, info = qp(xs, ys, splits, self.degree, lb, ub,
+                         self.monotonic_trend, self.verbose)
         elif _method == "qp_separated":
-            c = qp_separated(xs, ys, splits, self.degree, lb, ub,
-                             self.monotonic_trend, self.verbose)
+            c, info = qp_separated(xs, ys, splits, self.degree, lb, ub,
+                                   self.monotonic_trend, self.verbose)
 
         self.coef_ = c
+
+        if self.continuous:
+            self._status = info["status"]
+            self._stats = info["stats"]
+        else:
+            self._status = [_info["status"] for _info in info]
+            self._stats = [_info["stats"] for _info in info]
+
         self._splits = splits
         self._is_fitted = True
 
@@ -321,10 +336,7 @@ class RobustPWRegression(BaseEstimator):
         p : numpy array, shape = (n_samples,)
             Predicted array.
         """
-        if not self._is_fitted:
-            raise NotFittedError("This {} instance is not fitted yet. Call "
-                                 "'fit' with appropriate arguments."
-                                 .format(self.__class__.__name__))
+        self._check_is_fitted()
 
         bounded = (lb is not None or ub is not None)
 
@@ -344,3 +356,34 @@ class RobustPWRegression(BaseEstimator):
             pred = np.clip(pred, lb, ub)
 
         return pred
+
+    def _check_is_fitted(self):
+        if not self._is_fitted:
+            raise NotFittedError("This {} instance is not fitted yet. Call "
+                                 "'fit' with appropriate arguments."
+                                 .format(self.__class__.__name__))
+
+    @property
+    def status(self):
+        """The status of the underlying optimization solver.
+
+        Returns
+        -------
+        status : str
+        """
+        self._check_is_fitted()
+
+        return self._status
+
+    @property
+    def stats(self):
+        """The number of variables and constraints of the underlying
+        optimization problem.
+
+        Returns
+        -------
+        stats : dict
+        """
+        self._check_is_fitted()
+
+        return self._stats
