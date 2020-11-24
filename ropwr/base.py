@@ -43,13 +43,9 @@ def _check_parameters(objective, degree, continuous, monotonic_trend, solver,
                              'string values are "ascending", "descending", '
                              '"convex" and "concave".')
 
-        if monotonic_trend in ("convex", "concave") and degree != 1:
-            raise ValueError('Option monotonic trend "convex" and "concave" '
-                             'valid if degree = 1.')
-
         if monotonic_trend in ("convex", "concave") and not continuous:
             raise ValueError('Option monotonic trend "convex" and "concave" '
-                             'valid if "continuous"=True.')
+                             'valid if continuous=True.')
 
     if solver not in ("auto", "ecos", "osqp", "direct"):
         raise ValueError('Invalid value for solver. Allowed string '
@@ -84,7 +80,7 @@ def _choose_method(objective, degree, continuous, monotonic_trend, solver,
                     else:
                         return "lsq_direct_separated"
                 else:
-                    if continuous:
+                    if continuous or degree == 0:
                         return "qp"
                     else:
                         return "qp_separated"
@@ -111,7 +107,7 @@ def _choose_method(objective, degree, continuous, monotonic_trend, solver,
         else:
             raise ValueError('solver="osqp" only for objective="l2".')
     elif solver == "ecos":
-        if continuous:
+        if continuous or degree == 0:
             return "socp"
         else:
             return "socp_separated"
@@ -259,16 +255,17 @@ class RobustPWRegression(BaseEstimator):
         elif _method == "lsq_direct_separated":
             c, info = lsq_direct_separated(xs, ys, splits, self.degree)
         elif _method == "socp":
-            c, info = socp(xs, ys, splits, self.degree, lb, ub, self.objective,
-                           self.monotonic_trend, self.h_epsilon, self.quantile,
-                           self.solver, self.verbose)
+            c, info = socp(xs, ys, splits, self.degree, self.continuous, lb,
+                           ub, self.objective, self.monotonic_trend,
+                           self.h_epsilon, self.quantile, self.solver,
+                           self.verbose)
         elif _method == "socp_separated":
             c, info = socp_separated(xs, ys, splits, self.degree, lb, ub,
                                      self.objective, self.monotonic_trend,
                                      self.h_epsilon, self.quantile,
                                      self.solver, self.verbose)
         elif _method == "qp":
-            c, info = qp(xs, ys, splits, self.degree, lb, ub,
+            c, info = qp(xs, ys, splits, self.degree, self.continuous, lb, ub,
                          self.monotonic_trend, self.verbose)
         elif _method == "qp_separated":
             c, info = qp_separated(xs, ys, splits, self.degree, lb, ub,
@@ -276,7 +273,7 @@ class RobustPWRegression(BaseEstimator):
 
         self.coef_ = c
 
-        if self.continuous:
+        if self.continuous or self.degree == 0:
             self._status = info["status"]
             self._stats = info["stats"]
         else:

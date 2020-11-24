@@ -13,30 +13,32 @@ from .cvx import _monotonic_trend_constraints
 from .cvx import _problem_info
 from .matrices import matrix_A
 from .matrices import matrix_A_D
-from .matrices import matrix_CC
-from .matrices import matrix_D0
+from .matrices import matrix_A_H
+from .matrices import matrix_D
+from .matrices import matrix_H
 from .matrices import matrix_S
 from .matrices import submatrix_A
 from .matrices import submatrix_A_D
+from .matrices import submatrix_D
 
 
-def qp(x, y, splits, degree, lb, ub, monotonic_trend, verbose):
+def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
     # Parameters
     n_bins = len(splits) + 1
     order = degree + 1
 
     if monotonic_trend in ("ascending", "descending"):
-        if order == 1:
+        if order <= 2:
             A = matrix_A(x, splits, order)
-            D = matrix_D0(splits)
-        elif order == 2:
-            A = matrix_A(x, splits, order)
-            D = None
+            D = matrix_D(x, splits, order)
         else:
             A, D = matrix_A_D(x, splits, order)
     elif monotonic_trend in ("convex", "concave"):
-        A = matrix_A(x, splits, order)
-        D = matrix_CC(splits)
+        if order <= 2:
+            A = matrix_A(x, splits, order)
+            D = matrix_H(x, splits, order)
+        else:
+            A, D = matrix_A_H(x, splits, order)
     else:
         A = matrix_A(x, splits, order)
         D = None
@@ -53,12 +55,12 @@ def qp(x, y, splits, degree, lb, ub, monotonic_trend, verbose):
 
     # Constraints
     constraints = []
-    if n_bins > 1:
+    if n_bins > 1 and continuous:
         S = matrix_S(x, splits, order)
         constraints.append(S * c == 0)
 
     if monotonic_trend:
-        mono_cons = _monotonic_trend_constraints(monotonic_trend, c, D, order)
+        mono_cons = _monotonic_trend_constraints(monotonic_trend, c, D)
         constraints.append(mono_cons)
 
     if lb is not None:
@@ -94,17 +96,11 @@ def qp_separated(x, y, splits, degree, lb, ub, monotonic_trend, verbose):
         ni = len(xi)
 
         if monotonic_trend in ("ascending", "descending"):
-            if order == 1:
-                Ai = submatrix_A_D(ni, xi, order)
-                Di = matrix_D0(splits)
-            elif order == 2:
+            if order == 2:
                 Ai = submatrix_A(ni, xi, order)
-                Di = None
+                Di = submatrix_D(order)
             else:
                 Ai, Di = submatrix_A_D(ni, xi, order)
-        elif monotonic_trend in ("convex", "concave"):
-            Ai = submatrix_A(ni, xi, order)
-            Di = matrix_CC(splits)
         else:
             Ai = submatrix_A(ni, xi, order)
             Di = None
@@ -121,8 +117,7 @@ def qp_separated(x, y, splits, degree, lb, ub, monotonic_trend, verbose):
         # Constraints
         constraints = []
         if monotonic_trend:
-            mono_cons = _monotonic_trend_constraints(
-                monotonic_trend, ci, Di, order)
+            mono_cons = _monotonic_trend_constraints(monotonic_trend, ci, Di)
             constraints.append(mono_cons)
 
         if lb is not None:

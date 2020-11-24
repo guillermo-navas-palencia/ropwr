@@ -47,23 +47,37 @@ def matrix_S(x, splits, order):
 
 
 def matrix_D(x, splits, order):
-    n = len(x)
-    n_bins = len(splits) + 1
-    indices = np.searchsorted(splits, x, side='right')
+    n_splits = len(splits)
+    n_bins = n_splits + 1
 
-    D = np.zeros((n, n_bins * order))
+    if order == 1:
+        D = np.zeros((n_splits, n_bins))
 
-    cn = 0
-    for i in range(n_bins):
-        xi = x[indices == i]
-        ni = len(xi)
+        for i in range(n_splits):
+            D[i, [i, i + 1]] = [-1, 1]
 
-        qxi = np.ones(ni) / xi
-        for k, j in enumerate(range(order * i, order * (i + 1))):
-            D[cn: cn + ni, j] = k * qxi
-            qxi *= xi
+    elif order == 2:
+        D = np.zeros((n_bins * order, n_bins * order))
 
-        cn += ni
+        for i in range(n_bins):
+            D[i, i + 1] = 1
+
+    else:
+        n = len(x)
+        indices = np.searchsorted(splits, x, side='right')
+        D = np.zeros((n, n_bins * order))
+
+        cn = 0
+        for i in range(n_bins):
+            xi = x[indices == i]
+            ni = len(xi)
+
+            qxi = np.ones(ni) / xi
+            for k, j in enumerate(range(order * i, order * (i + 1))):
+                D[cn: cn + ni, j] = k * qxi
+                qxi *= xi
+
+            cn += ni
 
     return D
 
@@ -96,28 +110,61 @@ def matrix_A_D(x, splits, order):
     return A, D
 
 
-def matrix_CC(splits):
+def matrix_H(x, splits, order):
     n_splits = len(splits)
     n_bins = n_splits + 1
 
-    CC = np.zeros((n_splits, n_bins * 2))
+    if order == 2:
+        H = np.zeros((n_splits, n_bins * 2))
 
-    for i in range(n_splits):
-        CC[i, [i * 2 + 1, i * 2 + 3]] = [-1, 1]
+        for i in range(n_splits):
+            H[i, [i * 2 + 1, i * 2 + 3]] = [-1, 1]
+    else:
+        n = len(x)
+        indices = np.searchsorted(splits, x, side='right')
+        H = np.zeros((n, n_bins * order))
 
-    return CC
+        cn = 0
+        for i in range(n_bins):
+            xi = x[indices == i]
+            ni = len(xi)
+
+            qxi = np.ones(ni) / (xi * xi)
+            for k, j in enumerate(range(order * i, order * (i + 1))):
+                H[cn: cn + ni, j] = k * (k - 1) * qxi
+                qxi *= xi
+
+            cn += ni
+
+    return H
 
 
-def matrix_D0(splits):
-    n_splits = len(splits)
-    n_bins = n_splits + 1
+def matrix_A_H(x, splits, order):
+    n = len(x)
+    n_bins = len(splits) + 1
 
-    D = np.zeros((n_splits, n_bins))
+    indices = np.searchsorted(splits, x, side='right')
 
-    for i in range(n_splits):
-        D[i, [i, i + 1]] = [-1, 1]
+    nA = n_bins * order
+    A = np.zeros((n, nA))
+    H = np.zeros((n, nA))
 
-    return D
+    cn = 0
+    for i in range(n_bins):
+        xi = x[indices == i]
+        ni = len(xi)
+
+        pxi = np.ones(ni)
+        qxi = pxi / (xi * xi)
+        for k, j in enumerate(range(order * i, order * (i + 1))):
+            A[cn: cn + ni, j] = pxi
+            H[cn: cn + ni, j] = k * (k - 1) * qxi
+            pxi *= xi
+            qxi *= xi
+
+        cn += ni
+
+    return A, H
 
 
 def submatrix_A(ni, xi, order):
@@ -128,6 +175,13 @@ def submatrix_A(ni, xi, order):
         pxi *= xi
 
     return Ai
+
+
+def submatrix_D(order):
+    Di = np.zeros(order)
+    Di[1] = 1
+
+    return Di
 
 
 def submatrix_A_D(ni, xi, order):
