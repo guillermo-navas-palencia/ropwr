@@ -60,7 +60,7 @@ def matrix_D(x, splits, order):
         D = np.zeros((n_bins * order, n_bins * order))
 
         for i in range(n_bins):
-            D[i, i + 1] = 1
+            D[i, i * 2 + 1] = 1
 
     else:
         n = len(x)
@@ -80,6 +80,53 @@ def matrix_D(x, splits, order):
             cn += ni
 
     return D
+
+
+def matrix_DPV(x, splits, order, monotonic_trend):
+    n_splits = len(splits)
+    n_bins = n_splits + 1
+
+    indices = np.searchsorted(splits, x, side='right')
+
+    mean = [x[indices == i].mean() for i in range(n_bins)]
+    if monotonic_trend == "peak":
+        change_point = np.argmax(mean)
+    else:
+        change_point = np.argmin(mean)
+
+    if order > 2:
+        change_point = np.searchsorted(x, splits[change_point], side='right')
+        print(change_point)
+
+    if order == 1:
+        D = np.zeros((n_splits, n_bins))
+
+        for i in range(n_splits):
+            D[i, [i, i + 1]] = [-1, 1]
+
+    elif order == 2:
+        D = np.zeros((n_bins, n_bins * order))
+
+        for i in range(n_bins):
+            D[i, i * 2 + 1] = 1
+
+    else:
+        n = len(x)
+        D = np.zeros((n, n_bins * order))
+
+        cn = 0
+        for i in range(n_bins):
+            xi = x[indices == i]
+            ni = len(xi)
+
+            qxi = np.ones(ni) / xi
+            for k, j in enumerate(range(order * i, order * (i + 1))):
+                D[cn: cn + ni, j] = k * qxi
+                qxi *= xi
+
+            cn += ni
+
+    return D, change_point + 1
 
 
 def matrix_A_D(x, splits, order):

@@ -9,8 +9,8 @@ regression.
 import cvxpy as cp
 import numpy as np
 
-from .cvx import _problem_info
-from .cvx import _monotonic_trend_constraints
+from .cvx import monotonic_trend_constraints
+from .cvx import problem_info
 from .matrices import matrix_A
 from .matrices import matrix_A_D
 from .matrices import matrix_A_H
@@ -74,7 +74,7 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
         constraints.append(S * c == 0)
 
     if monotonic_trend:
-        mono_cons = _monotonic_trend_constraints(monotonic_trend, c, D)
+        mono_cons = monotonic_trend_constraints(monotonic_trend, c, D)
         constraints.append(mono_cons)
 
     if lb is not None:
@@ -95,7 +95,7 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
     prob.solve(solver=_solver, verbose=verbose)
     size_metrics = cp.problems.problem.SizeMetrics(prob)
     status = prob.status
-    info = _problem_info(status, size_metrics)
+    info = problem_info(status, size_metrics)
 
     return c.value.reshape((n_bins, order)), info
 
@@ -143,7 +143,7 @@ def socp_separated(x, y, splits, degree, lb, ub, objective,
         # Constraints
         constraints = []
         if monotonic_trend:
-            mono_cons = _monotonic_trend_constraints(monotonic_trend, ci, Di)
+            mono_cons = monotonic_trend_constraints(monotonic_trend, ci, Di)
             constraints.append(mono_cons)
 
         if lb is not None:
@@ -156,7 +156,7 @@ def socp_separated(x, y, splits, degree, lb, ub, objective,
 
         size_metrics = cp.problems.problem.SizeMetrics(prob)
         status = prob.status
-        info = _problem_info(status, size_metrics)
+        info = problem_info(status, size_metrics)
         infos.append(info)
 
         c[i, :] = ci.value

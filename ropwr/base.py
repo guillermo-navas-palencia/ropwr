@@ -38,7 +38,7 @@ def _check_parameters(objective, degree, continuous, monotonic_trend, solver,
 
     if monotonic_trend is not None:
         if monotonic_trend not in ("ascending", "descending", "convex",
-                                   "concave"):
+                                   "concave", "peak", "valley"):
             raise ValueError('Invalid value for monotonic trend. Allowed '
                              'string values are "ascending", "descending", '
                              '"convex" and "concave".')

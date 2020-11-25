@@ -9,12 +9,13 @@ objective.
 import cvxpy as cp
 import numpy as np
 
-from .cvx import _monotonic_trend_constraints
-from .cvx import _problem_info
+from .cvx import monotonic_trend_constraints
+from .cvx import problem_info
 from .matrices import matrix_A
 from .matrices import matrix_A_D
 from .matrices import matrix_A_H
 from .matrices import matrix_D
+from .matrices import matrix_DPV
 from .matrices import matrix_H
 from .matrices import matrix_S
 from .matrices import submatrix_A
@@ -27,6 +28,7 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
     n_bins = len(splits) + 1
     order = degree + 1
 
+    t = None
     if monotonic_trend in ("ascending", "descending"):
         if order <= 2:
             A = matrix_A(x, splits, order)
@@ -39,6 +41,9 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
             D = matrix_H(x, splits, order)
         else:
             A, D = matrix_A_H(x, splits, order)
+    elif monotonic_trend in ("peak", "valley"):
+        A = matrix_A(x, splits, order)
+        D, t = matrix_DPV(x, splits, order, monotonic_trend)
     else:
         A = matrix_A(x, splits, order)
         D = None
@@ -60,8 +65,12 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
         constraints.append(S * c == 0)
 
     if monotonic_trend:
-        mono_cons = _monotonic_trend_constraints(monotonic_trend, c, D)
-        constraints.append(mono_cons)
+        mono_cons = monotonic_trend_constraints(monotonic_trend, c, D, t)
+        if isinstance(mono_cons, list):
+            for mc in mono_cons:
+                constraints.append(mc)
+        else:
+            constraints.append(mono_cons)
 
     if lb is not None:
         constraints.append(A * c >= lb)
@@ -74,7 +83,7 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
 
     size_metrics = cp.problems.problem.SizeMetrics(prob)
     status = prob.status
-    info = _problem_info(status, size_metrics)
+    info = problem_info(status, size_metrics)
 
     return c.value.reshape((n_bins, order)), info
 
@@ -117,7 +126,7 @@ def qp_separated(x, y, splits, degree, lb, ub, monotonic_trend, verbose):
         # Constraints
         constraints = []
         if monotonic_trend:
-            mono_cons = _monotonic_trend_constraints(monotonic_trend, ci, Di)
+            mono_cons = monotonic_trend_constraints(monotonic_trend, ci, Di)
             constraints.append(mono_cons)
 
         if lb is not None:
@@ -130,7 +139,7 @@ def qp_separated(x, y, splits, degree, lb, ub, monotonic_trend, verbose):
 
         size_metrics = cp.problems.problem.SizeMetrics(prob)
         status = prob.status
-        info = _problem_info(status, size_metrics)
+        info = problem_info(status, size_metrics)
         infos.append(info)
 
         c[i, :] = ci.value
