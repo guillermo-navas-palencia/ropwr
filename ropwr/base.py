@@ -185,7 +185,7 @@ class RobustPWRegression(BaseEstimator):
         and "quantile". Note that "l1", "huber" and "quantile" are robust
         objective functions.
 
-    regularization: str or None (default=None):
+    regularization: str or None (default=None)
         Type of regularization. Supported regularization are "l1" (Lasso) and
         "l2" (Ridge). If None, no regularization is applied.
 
@@ -230,6 +230,11 @@ class RobustPWRegression(BaseEstimator):
 
     verbose : bool (default=False)
         Enable verbose output.
+
+    Attributes
+    ----------
+    coef_ : numpy.ndarray of shape (n_splits + 1, degree + 1)
+        Coefficients for each bin. Number of bins = n_splits + 1.
     """
     def __init__(self, objective="l2", degree=1, continuous=True,
                  monotonic_trend=None, solver="auto", h_epsilon=1.35,
