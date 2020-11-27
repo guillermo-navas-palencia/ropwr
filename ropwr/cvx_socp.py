@@ -9,6 +9,7 @@ regression.
 import cvxpy as cp
 import numpy as np
 
+from .cvx import compute_change_point
 from .cvx import monotonic_trend_constraints
 from .cvx import problem_info
 from .matrices import matrix_A
@@ -22,34 +23,44 @@ from .matrices import submatrix_A_D
 from .matrices import submatrix_D
 
 
-def _model_objective(A, c, y, objective, h_epsilon, quantile):
+def _model_objective(A, c, y, objective, regularization, h_epsilon, quantile,
+                     reg_l1, reg_l2):
     if objective == "l1":
-        obj = cp.Minimize(cp.norm(A * c - y, 1))
+        obj = cp.norm(A * c - y, 1)
     elif objective == "l2":
-        obj = cp.Minimize(cp.norm(A * c - y, 2))
+        obj = cp.norm(A * c - y, 2)
     elif objective == "huber":
-        obj = cp.Minimize(cp.sum(cp.huber(A * c - y, h_epsilon)))
+        obj = cp.sum(cp.huber(A * c - y, h_epsilon))
     elif objective == "quantile":
         obj1 = 0.5 * cp.norm(A * c - y, 1)
         obj2 = (quantile - 0.5) * cp.sum(A * c - y)
-        obj = cp.Minimize(obj1 + obj2)
+        obj = obj1 + obj2
 
-    return obj
+    if regularization == "l1":
+        obj += reg_l1 * cp.norm(c, 1)
+    elif regularization == "l2":
+        obj += reg_l2 * cp.norm(c, 2)
+
+    return cp.Minimize(obj)
 
 
 def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
-         h_epsilon, quantile, solver, verbose):
+         h_epsilon, quantile, regularization, reg_l1, reg_l2, solver, verbose):
 
     # Parameters
     n_bins = len(splits) + 1
     order = degree + 1
 
-    if monotonic_trend in ("ascending", "descending"):
+    t = None
+    if monotonic_trend in ("ascending", "descending", "peak", "valley"):
         if order <= 2:
             A = matrix_A(x, splits, order)
             D = matrix_D(x, splits, order)
         else:
             A, D = matrix_A_D(x, splits, order)
+
+        if monotonic_trend in ("peak", "valley"):
+            t = compute_change_point(x, splits, order, monotonic_trend)
     elif monotonic_trend in ("convex", "concave"):
         if order <= 2:
             A = matrix_A(x, splits, order)
@@ -65,7 +76,8 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
     c = cp.Variable(nvar)
 
     # Objective function
-    obj = _model_objective(A, c, y, objective, h_epsilon, quantile)
+    obj = _model_objective(A, c, y, objective, regularization, h_epsilon,
+                           quantile, reg_l1, reg_l2)
 
     # Constraints
     constraints = []
@@ -74,8 +86,11 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
         constraints.append(S * c == 0)
 
     if monotonic_trend:
-        mono_cons = monotonic_trend_constraints(monotonic_trend, c, D)
-        constraints.append(mono_cons)
+        mono_cons = monotonic_trend_constraints(monotonic_trend, c, D, t)
+        if isinstance(mono_cons, list):
+            constraints.extend(mono_cons)
+        else:
+            constraints.append(mono_cons)
 
     if lb is not None:
         constraints.append(A * c >= lb)

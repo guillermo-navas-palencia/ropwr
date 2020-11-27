@@ -22,12 +22,18 @@ from .cvx_qp import qp
 from .cvx_qp import qp_separated
 
 
-def _check_parameters(objective, degree, continuous, monotonic_trend, solver,
-                      h_epsilon, quantile, verbose):
+def _check_parameters(objective, regularization, degree, continuous,
+                      monotonic_trend, solver, h_epsilon, quantile, reg_l1,
+                      reg_l2, verbose):
 
     if objective not in ("l1", "l2", "huber", "quantile"):
         raise ValueError('Invalid value for objective. Allowed string '
                          'values are "l1", "l2", "huber" and "quantile".')
+
+    if regularization is not None:
+        if regularization not in ("l1", "l2"):
+            raise ValueError('Invalid value for regularization. Allowed '
+                             'string values are "l1" and "l2".')
 
     if not isinstance(degree, numbers.Integral) or not 0 <= degree <= 5:
         raise ValueError("degree must be an integer in [0, 5].")
@@ -41,11 +47,12 @@ def _check_parameters(objective, degree, continuous, monotonic_trend, solver,
                                    "concave", "peak", "valley"):
             raise ValueError('Invalid value for monotonic trend. Allowed '
                              'string values are "ascending", "descending", '
-                             '"convex" and "concave".')
+                             '"convex", "concave", "peak" and "valley".')
 
-        if monotonic_trend in ("convex", "concave") and not continuous:
-            raise ValueError('Option monotonic trend "convex" and "concave" '
-                             'valid if continuous=True.')
+        if (monotonic_trend in ("convex", "concave", "peak", "valley")
+                and not continuous):
+            raise ValueError('Option monotonic trend "convex", "concave", '
+                             '"peak" and "valley" valid if continuous=True.')
 
     if solver not in ("auto", "ecos", "osqp", "direct"):
         raise ValueError('Invalid value for solver. Allowed string '
@@ -59,15 +66,23 @@ def _check_parameters(objective, degree, continuous, monotonic_trend, solver,
         raise ValueError("quantile must be a value in (0, 1); got {}."
                          .format(quantile))
 
+    if not isinstance(reg_l1, numbers.Number) or reg_l1 < 0.0:
+        raise ValueError("reg_l1 must be a positive value; got {}."
+                         .format(reg_l1))
+
+    if not isinstance(reg_l2, numbers.Number) or reg_l2 < 0.0:
+        raise ValueError("reg_l2 must be a positive value; got {}."
+                         .format(reg_l2))
+
     if not isinstance(verbose, bool):
         raise TypeError("verbose must be a boolean; got {}.".format(verbose))
 
 
 def _choose_method(objective, degree, continuous, monotonic_trend, solver,
-                   bounded):
+                   bounded, regularization):
 
     if solver == "auto":
-        if bounded:
+        if bounded or regularization is not None:
             if continuous:
                 return "socp"
             else:
@@ -79,33 +94,41 @@ def _choose_method(objective, degree, continuous, monotonic_trend, solver,
                         return "lsq_direct"
                     else:
                         return "lsq_direct_separated"
-                else:
+                elif degree <= 1:
                     if continuous or degree == 0:
                         return "qp"
                     else:
                         return "qp_separated"
+                else:
+                    if continuous:
+                        return "socp"
+                    else:
+                        return "socp_separated"
             else:
                 if continuous:
                     return "socp"
                 else:
                     return "socp_separated"
     elif solver == "direct":
-        if objective != "l2" or monotonic_trend is not None or bounded:
+        if (objective != "l2" or monotonic_trend is not None or bounded
+                or regularization is not None):
             raise ValueError('solver "direct" only for objective="l2", '
-                             'monotonic_trend=None and lb=ub=None.')
+                             'monotonic_trend=None, lb=ub=None, and '
+                             'regularization=None.')
         else:
             if continuous:
                 return "lsq_direct"
             else:
                 return "lsq_direct_separated"
     elif solver == "osqp":
-        if objective == "l2":
+        if objective == "l2" and regularization is None:
             if continuous:
                 return "qp"
             else:
                 return "qp_separated"
         else:
-            raise ValueError('solver="osqp" only for objective="l2".')
+            raise ValueError('solver="osqp" only for objective="l2" and '
+                             'regularization=None.')
     elif solver == "ecos":
         if continuous or degree == 0:
             return "socp"
@@ -129,11 +152,15 @@ def _check_bounds(lb, ub):
             raise ValueError("lb must be <= ub.")
 
 
-def _check_splits(splits):
+def _check_splits(splits, monotonic_trend):
     if not isinstance(splits, (list, np.ndarray)):
         raise TypeError("splits must be a list or numpy.ndarray.")
 
     if not len(splits):
+        if monotonic_trend in ("peak", "valley"):
+            raise ValueError('monotonic trend "peak" and "valley" require a '
+                             'list of splits.')
+
         return splits
     else:
         user_splits = check_array(splits, ensure_2d=False,
@@ -157,6 +184,10 @@ class RobustPWRegression(BaseEstimator):
         The objective function. Supported objectives are "l2", "l1", "huber"
         and "quantile". Note that "l1", "huber" and "quantile" are robust
         objective functions.
+
+    regularization: str or None (default=None):
+        Type of regularization. Supported regularization are "l1" (Lasso) and
+        "l2" (Ridge). If None, no regularization is applied.
 
     degree : int (default=1)
         The degree of the polynomials.
@@ -189,12 +220,21 @@ class RobustPWRegression(BaseEstimator):
         The parameter quantile is the q-th quantile to be used when
         ``objective="quantile"``.
 
+    reg_l1 : float (default=1.0)
+        L1 regularization term. Increasing this value will smooth the
+        regression model. Only applicable if ``regularization="l1"``.
+
+    reg_l2 : float (default=1.0)
+        L2 regularization term. Increasing this value will smooth the
+        regression model. Only applicable if ``regularization="l2"``.
+
     verbose : bool (default=False)
         Enable verbose output.
     """
     def __init__(self, objective="l2", degree=1, continuous=True,
                  monotonic_trend=None, solver="auto", h_epsilon=1.35,
-                 quantile=0.5, verbose=False):
+                 quantile=0.5, regularization=None, reg_l1=1.0, reg_l2=1.0,
+                 verbose=False):
 
         self.objective = objective
         self.degree = degree
@@ -203,6 +243,9 @@ class RobustPWRegression(BaseEstimator):
         self.solver = solver
         self.h_epsilon = h_epsilon
         self.quantile = quantile
+        self.regularization = regularization
+        self.reg_l1 = reg_l1
+        self.reg_l2 = reg_l2
         self.verbose = verbose
 
         self.coef_ = None
@@ -225,6 +268,11 @@ class RobustPWRegression(BaseEstimator):
 
         ub : float or None (default=None)
             Add constraints to avoid values above the upper bound ub.
+
+        Returns
+        -------
+        self : object
+            Fitted piecewise regression.
         """
         _check_parameters(**self.get_params())
 
@@ -238,7 +286,7 @@ class RobustPWRegression(BaseEstimator):
         ys = y[idx]
 
         # Check user splits
-        _check_splits(splits)
+        _check_splits(splits, self.monotonic_trend)
 
         # Check bounds
         bounded = (lb is not None or ub is not None)
@@ -248,7 +296,8 @@ class RobustPWRegression(BaseEstimator):
 
         # Choose the most appropriate method/solver given the parameters
         _method = _choose_method(self.objective, self.degree, self.continuous,
-                                 self.monotonic_trend, self.solver, bounded)
+                                 self.monotonic_trend, self.solver, bounded,
+                                 self.regularization)
 
         if _method == "lsq_direct":
             c, info = lsq_direct(xs, ys, splits, self.degree)
@@ -257,8 +306,8 @@ class RobustPWRegression(BaseEstimator):
         elif _method == "socp":
             c, info = socp(xs, ys, splits, self.degree, self.continuous, lb,
                            ub, self.objective, self.monotonic_trend,
-                           self.h_epsilon, self.quantile, self.solver,
-                           self.verbose)
+                           self.h_epsilon, self.quantile, self.regularization,
+                           self.reg_l1, self.reg_l2, self.solver, self.verbose)
         elif _method == "socp_separated":
             c, info = socp_separated(xs, ys, splits, self.degree, lb, ub,
                                      self.objective, self.monotonic_trend,

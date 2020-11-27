@@ -9,13 +9,13 @@ objective.
 import cvxpy as cp
 import numpy as np
 
+from .cvx import compute_change_point
 from .cvx import monotonic_trend_constraints
 from .cvx import problem_info
 from .matrices import matrix_A
 from .matrices import matrix_A_D
 from .matrices import matrix_A_H
 from .matrices import matrix_D
-from .matrices import matrix_DPV
 from .matrices import matrix_H
 from .matrices import matrix_S
 from .matrices import submatrix_A
@@ -29,21 +29,21 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
     order = degree + 1
 
     t = None
-    if monotonic_trend in ("ascending", "descending"):
+    if monotonic_trend in ("ascending", "descending", "peak", "valley"):
         if order <= 2:
             A = matrix_A(x, splits, order)
             D = matrix_D(x, splits, order)
         else:
             A, D = matrix_A_D(x, splits, order)
+
+        if monotonic_trend in ("peak", "valley"):
+            t = compute_change_point(x, splits, order, monotonic_trend)
     elif monotonic_trend in ("convex", "concave"):
         if order <= 2:
             A = matrix_A(x, splits, order)
             D = matrix_H(x, splits, order)
         else:
             A, D = matrix_A_H(x, splits, order)
-    elif monotonic_trend in ("peak", "valley"):
-        A = matrix_A(x, splits, order)
-        D, t = matrix_DPV(x, splits, order, monotonic_trend)
     else:
         A = matrix_A(x, splits, order)
         D = None
@@ -67,8 +67,7 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
     if monotonic_trend:
         mono_cons = monotonic_trend_constraints(monotonic_trend, c, D, t)
         if isinstance(mono_cons, list):
-            for mc in mono_cons:
-                constraints.append(mc)
+            constraints.extend(mono_cons)
         else:
             constraints.append(mono_cons)
 

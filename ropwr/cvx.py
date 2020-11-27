@@ -5,6 +5,8 @@ Auxiliary functions for cvxpy formulations.
 # Guillermo Navas-Palencia <g.navas.palencia@gmail.com>
 # Copyright (C) 2020
 
+import numpy as np
+
 
 def monotonic_trend_constraints(monotonic_trend, c, D, t=None):
     if monotonic_trend in ("ascending", "convex"):
@@ -15,6 +17,23 @@ def monotonic_trend_constraints(monotonic_trend, c, D, t=None):
         return [D[:t, :] * c <= 0, D[t:, :] * c >= 0]
     elif monotonic_trend == "peak":
         return [D[:t, :] * c >= 0, D[t:, :] * c <= 0]
+
+
+def compute_change_point(x, splits, order, monotonic_trend):
+    n_splits = len(splits)
+    n_bins = n_splits + 1
+    indices = np.searchsorted(splits, x, side='right')
+
+    mean = [x[indices == i].mean() for i in range(n_bins)]
+    if monotonic_trend == "peak":
+        change_point = np.argmax(mean)
+    else:
+        change_point = np.argmin(mean)
+
+    if order > 2:
+        change_point = np.searchsorted(x, splits[change_point], side='right')
+
+    return change_point + 1
 
 
 def problem_info(status, size_metrics):
