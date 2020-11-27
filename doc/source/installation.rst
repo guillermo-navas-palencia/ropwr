@@ -4,14 +4,14 @@ Installation
 Install release
 ---------------
 
-To install the current release of RoPWF:
+To install the current release of RoPWR:
 
 .. code-block:: text
 
-   pip install ropwf
+   pip install ropwr
 
 Optionally, download a different release
-from https://github.com/guillermo-navas-palencia/ropwf/releases and install
+from https://github.com/guillermo-navas-palencia/ropwr/releases and install
 using
 
 .. code-block:: text
@@ -21,9 +21,9 @@ using
 Install from source
 -------------------
 
-To install from source, download or clone the git repository https://github.com/guillermo-navas-palencia/ropwf
+To install from source, download or clone the git repository https://github.com/guillermo-navas-palencia/ropwr
 
 .. code-block:: text
 
-   cd ropwf
+   cd ropwr
    python setup.py install

@@ -1,7 +1,7 @@
-API
-===
+API Reference
+=============
 
-.. autoclass:: ropwf.RobustPWRegression
+.. autoclass:: ropwr.RobustPWRegression
    :members:
    :inherited-members:
    :show-inheritance:
