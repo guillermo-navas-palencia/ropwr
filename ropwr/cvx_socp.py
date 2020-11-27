@@ -60,7 +60,7 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
             A, D = matrix_A_D(x, splits, order)
 
         if monotonic_trend in ("peak", "valley"):
-            t = compute_change_point(x, splits, order, monotonic_trend)
+            t = compute_change_point(x, y, splits, order, monotonic_trend)
     elif monotonic_trend in ("convex", "concave"):
         if order <= 2:
             A = matrix_A(x, splits, order)

@@ -19,12 +19,12 @@ def monotonic_trend_constraints(monotonic_trend, c, D, t=None):
         return [D[:t, :] * c >= 0, D[t:, :] * c <= 0]
 
 
-def compute_change_point(x, splits, order, monotonic_trend):
+def compute_change_point(x, y, splits, order, monotonic_trend):
     n_splits = len(splits)
     n_bins = n_splits + 1
     indices = np.searchsorted(splits, x, side='right')
 
-    mean = [x[indices == i].mean() for i in range(n_bins)]
+    mean = [y[indices == i].mean() for i in range(n_bins)]
     if monotonic_trend == "peak":
         change_point = np.argmax(mean)
     else:
