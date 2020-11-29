@@ -5,6 +5,9 @@ RoPWR
 .. image::  https://github.com/guillermo-navas-palencia/ropwr/workflows/CI/badge.svg
    :target: https://github.com/guillermo-navas-palencia/ropwr/workflows/CI/badge.svg
 
+.. image::  https://img.shields.io/github/license/guillermo-navas-palencia/optbinning
+   :target: https://img.shields.io/github/license/guillermo-navas-palencia/optbinning
+
 The **RoPWR** library implements several mathematical programming formulations
 to compute the optimal continuous/discontinuous piecewise polynomial regression
 given a list of split points. It supports several monotonic constraints, 
