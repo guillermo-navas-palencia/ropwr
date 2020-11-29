@@ -129,14 +129,38 @@ def test_solver_auto():
 
 
 def test_solver_direct():
-    pass
+    splits = [5, 10, 15, 20]
+
+    with raises(ValueError):
+        pw_d = RobustPWRegression(solver="direct", objective="l1")
+        pw_d.fit(x, y, splits)
+
+    with raises(ValueError):
+        pw_d = RobustPWRegression(solver="direct", monotonic_trend="peak")
+        pw_d.fit(x, y, splits)
+
+    with raises(ValueError):
+        pw_d = RobustPWRegression(solver="direct")
+        pw_d.fit(x, y, splits, lb=2)
 
 
 def test_solver_osqp():
-    pass
+    splits = [5, 10, 15, 20]
+
+    with raises(ValueError):
+        pw_d = RobustPWRegression(solver="osqp", objective="l1")
+        pw_d.fit(x, y, splits)
+
+    with raises(ValueError):
+        pw_d = RobustPWRegression(solver="osqp", regularization="l1")
+        pw_d.fit(x, y, splits)
 
 
 def test_solver_ecos():
+    pass
+
+
+def test_solver_ecos_regularization():
     pass
 
 
@@ -149,3 +173,18 @@ def test_predict():
 
 def test_predict_bounds():
     pass
+
+
+def test_status():
+    pw = RobustPWRegression()
+    pw.fit(x, y, splits=[5, 10, 15, 20])
+
+    assert pw.status == "optimal"
+
+
+def test_stats():
+    pw = RobustPWRegression()
+    pw.fit(x, y, splits=[5, 10, 15, 20])
+
+    assert pw.stats['n_variables'] == 10
+    assert pw.stats['n_constraints'] == 14
