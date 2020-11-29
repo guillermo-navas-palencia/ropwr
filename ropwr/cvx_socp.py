@@ -153,7 +153,8 @@ def socp_separated(x, y, splits, degree, lb, ub, objective,
         ci = cp.Variable(order)
 
         # Objective function
-        obj = _model_objective(Ai, ci, yi, objective, h_epsilon, quantile)
+        obj = _model_objective(Ai, ci, yi, objective, None, h_epsilon,
+                               quantile, None, None)
 
         # Constraints
         constraints = []

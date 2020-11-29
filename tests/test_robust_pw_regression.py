@@ -67,19 +67,61 @@ def test_params():
 
 
 def test_splits():
-    pass
+    with raises(TypeError):
+        pw = RobustPWRegression()
+        pw.fit(x, y, splits=(5, 10, 15))
+
+    with raises(ValueError):
+        pw = RobustPWRegression(monotonic_trend="peak")
+        pw.fit(x, y, splits=[])
+
+    with raises(ValueError):
+        pw = RobustPWRegression()
+        pw.fit(x, y, splits=[5, 5, 10])
 
 
 def test_bounds():
-    pass
+    with raises(TypeError):
+        pw = RobustPWRegression()
+        pw.fit(x, y, splits=[], lb=[1, 2])
+
+    with raises(TypeError):
+        pw = RobustPWRegression()
+        pw.fit(x, y, splits=[], ub=[1, 2])
+
+    with raises(ValueError):
+        pw = RobustPWRegression()
+        pw.fit(x, y, splits=[], lb=2, ub=1)
 
 
-def test_continuous():
-    pass
+def test_continuous_default():
+    splits = [5, 10, 15, 20]
+    pw_d = RobustPWRegression(solver="direct")
+    pw_d.fit(x, y, splits)
+
+    pw_o = RobustPWRegression(solver="osqp")
+    pw_o.fit(x, y, splits)
+
+    pw_e = RobustPWRegression(solver="ecos")
+    pw_e.fit(x, y, splits)
+
+    assert pw_d.coef_ == approx(pw_o.coef_, rel=1e-6)
+    assert pw_d.coef_ == approx(pw_e.coef_, rel=1e-6)
 
 
-def test_discontinuous():
-    pass
+def test_discontinuous_default():
+    splits = [5, 10, 15, 20]
+    pw_d = RobustPWRegression(solver="direct", continuous=False)
+    pw_d.fit(x, y, splits)
+
+    pw_o = RobustPWRegression(solver="osqp", continuous=False)
+    pw_o.fit(x, y, splits)
+
+    pw_e = RobustPWRegression(solver="ecos", continuous=False)
+    pw_e.fit(x, y, splits)
+
+    assert pw_d.coef_ == approx(pw_o.coef_, rel=1e-6)
+    assert pw_d.coef_ == approx(pw_e.coef_, rel=1e-6)
 
 
 def test_solver_auto():
@@ -95,4 +137,15 @@ def test_solver_osqp():
 
 
 def test_solver_ecos():
+    pass
+
+
+def test_predict():
+    pw = RobustPWRegression()
+
+    with raises(NotFittedError):
+        pw.predict(x)
+
+
+def test_predict_bounds():
     pass
