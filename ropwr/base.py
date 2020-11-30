@@ -312,12 +312,12 @@ class RobustPWRegression(BaseEstimator):
             c, info = socp(xs, ys, splits, self.degree, self.continuous, lb,
                            ub, self.objective, self.monotonic_trend,
                            self.h_epsilon, self.quantile, self.regularization,
-                           self.reg_l1, self.reg_l2, self.solver, self.verbose)
+                           self.reg_l1, self.reg_l2, self.verbose)
         elif _method == "socp_separated":
             c, info = socp_separated(xs, ys, splits, self.degree, lb, ub,
                                      self.objective, self.monotonic_trend,
                                      self.h_epsilon, self.quantile,
-                                     self.solver, self.verbose)
+                                     self.verbose)
         elif _method == "qp":
             c, info = qp(xs, ys, splits, self.degree, self.continuous, lb, ub,
                          self.monotonic_trend, self.verbose)

@@ -31,6 +31,8 @@ def compute_change_point(x, y, splits, order, monotonic_trend):
         change_point = np.argmin(mean)
 
     if order > 2:
+        if change_point >= n_splits:
+            change_point = n_splits - 1
         change_point = np.searchsorted(x, splits[change_point], side='right')
 
     return change_point + 1

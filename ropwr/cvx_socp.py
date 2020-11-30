@@ -45,7 +45,7 @@ def _model_objective(A, c, y, objective, regularization, h_epsilon, quantile,
 
 
 def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
-         h_epsilon, quantile, regularization, reg_l1, reg_l2, solver, verbose):
+         h_epsilon, quantile, regularization, reg_l1, reg_l2, verbose):
 
     # Parameters
     n_bins = len(splits) + 1
@@ -99,15 +99,8 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
 
     # Solve
     prob = cp.Problem(obj, constraints)
+    prob.solve(solver=cp.ECOS, verbose=verbose)
 
-    if solver == "ecos":
-        _solver = cp.ECOS
-    elif solver == "osqp":
-        _solver = cp.OSQP
-    else:
-        _solver = cp.ECOS
-
-    prob.solve(solver=_solver, verbose=verbose)
     size_metrics = cp.problems.problem.SizeMetrics(prob)
     status = prob.status
     info = problem_info(status, size_metrics)
@@ -116,14 +109,7 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
 
 
 def socp_separated(x, y, splits, degree, lb, ub, objective,
-                   monotonic_trend, h_epsilon, quantile, solver, verbose):
-
-    if solver == "ecos":
-        _solver = cp.ECOS
-    elif solver == "osqp":
-        _solver = cp.OSQP
-    else:
-        _solver = cp.ECOS
+                   monotonic_trend, h_epsilon, quantile, verbose):
 
     order = degree + 1
     n_bins = len(splits) + 1
@@ -168,7 +154,7 @@ def socp_separated(x, y, splits, degree, lb, ub, objective,
             constraints.append(Ai * ci <= ub)
 
         prob = cp.Problem(obj, constraints)
-        prob.solve(solver=_solver, verbose=verbose)
+        prob.solve(solver=cp.ECOS, verbose=verbose)
 
         size_metrics = cp.problems.problem.SizeMetrics(prob)
         status = prob.status

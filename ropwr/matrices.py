@@ -62,23 +62,6 @@ def matrix_D(x, splits, order):
         for i in range(n_bins):
             D[i, i * 2 + 1] = 1
 
-    else:
-        n = len(x)
-        indices = np.searchsorted(splits, x, side='right')
-        D = np.zeros((n, n_bins * order))
-
-        cn = 0
-        for i in range(n_bins):
-            xi = x[indices == i]
-            ni = len(xi)
-
-            qxi = np.ones(ni) / xi
-            for k, j in enumerate(range(order * i, order * (i + 1))):
-                D[cn: cn + ni, j] = k * qxi
-                qxi *= xi
-
-            cn += ni
-
     return D
 
 
