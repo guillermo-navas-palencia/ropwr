@@ -11,7 +11,7 @@ to compute the optimal continuous/discontinuous piecewise polynomial regression
 given a list of split points. It supports several monotonic constraints, 
 objective functions and regularizations. The library is written in Python and
 relies on cvxpy (ECOS and OSQP solvers) to solve the underlying optimization
-problems. Other formulations are solver using a direct approach.
+problems. Other formulations are solved using a direct approach.
 
 
 .. toctree::
@@ -19,4 +19,5 @@ problems. Other formulations are solver using a direct approach.
 
    installation
    release_notes
+   tutorials/tutorial
    api
