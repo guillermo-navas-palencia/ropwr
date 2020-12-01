@@ -36,8 +36,61 @@ To install from source, download or clone the git repository
 
 Dependencies
 ------------
-ropwr requires
+RoPWR requires
 
 * cvxpy (>=1.0)
 * numpy (>=1.16)
 * scikit-learn (>=0.22)
+
+Getting started
+===============
+
+Please visit the RoPWR documentation (**current** release) http://gnpalencia.org/ropwr/. You can get started following the `tutorial <http://gnpalencia.org/ropwr/tutorial.html>`_ and checking the API reference.
+
+Examples:
+---------
+
+.. code-block:: python
+
+   import pandas as pd
+   from sklearn.datasets import load_boston
+
+   data = load_boston()
+   df = pd.DataFrame(data.data, columns=data.feature_names)
+
+   x = df["NOX"].values
+   y = data.target
+
+
+.. code-block:: python
+
+   from sklearn.preprocessing import KBinsDiscretizer
+   from ropwr import RobustPWRegression
+
+   est = KBinsDiscretizer(n_bins=10, strategy="quantile")
+   est.fit(x.reshape(-1, 1), y)
+   splits = est.bin_edges_[0][1:-1]
+
+   pw = RobustPWRegression(objective="l2", degree=1, monotonic_trend=None)
+   pw.fit(x, y, splits)
+
+.. image:: doc/source/_images/pw_default.png
+   :target: doc/source/_images/pw_default.png
+
+
+.. code-block:: python
+
+   pw = RobustPWRegression(objective="l1", degree=1, monotonic_trend="convex")
+   pw.fit(x, y, splits)
+
+.. image:: doc/source/_images/pw_convex.png
+   :target: doc/source/_images/pw_convex.png
+
+
+.. code-block:: python
+
+   pw = RobustPWRegression(objective="l1", degree=1, monotonic_trend="valley")
+   pw.fit(x, y, splits)
+
+.. image:: doc/source/_images/pw_valley.png
+   :target: doc/source/_images/pw_valley.png
