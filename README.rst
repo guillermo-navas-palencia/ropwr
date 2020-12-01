@@ -47,8 +47,8 @@ Getting started
 
 Please visit the RoPWR documentation (**current** release) http://gnpalencia.org/ropwr/. You can get started following the `tutorial <http://gnpalencia.org/ropwr/tutorial.html>`_ and checking the API reference.
 
-Examples:
----------
+Examples
+--------
 
 To get us started, let’s load a well-known dataset from the UCI repository and transform the data into a ``pandas.DataFrame``.
 
@@ -104,7 +104,7 @@ To reduce the mean squared error (MSE) and mean absolute error (MAE), we replace
 .. image:: doc/source/_images/pw_valley.png
    :target: doc/source/_images/pw_valley.png
 
-RoPRW supports the four objectives functions ("l1", "l2", "huber", "quantile") and the addition of a
+RoPRW supports four objectives functions ("l1", "l2", "huber", "quantile") and the addition of a
 regularization term (l1-Lasso or l2-Ridge). Additionally, it permits imposing a lower or upper limit to the prediction. 
 
 .. code-block:: python
@@ -112,13 +112,9 @@ regularization term (l1-Lasso or l2-Ridge). Additionally, it permits imposing a 
    from sklearn.datasets import fetch_california_housing
 
    data = fetch_california_housing()
-
-   target = "target"
-   variable_names = data.feature_names
-   df = pd.DataFrame(data.data, columns=variable_names)
-   df[target] = data.target
+   df = pd.DataFrame(data.data, columns=data.feature_names)
    x = df["MedInc"].values
-   y = df[target].values
+   y = df["target"].values
 
    est = KBinsDiscretizer(n_bins=15, strategy="quantile")
    est.fit(x.reshape(-1, 1), y)
