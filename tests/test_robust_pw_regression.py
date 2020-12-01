@@ -10,6 +10,7 @@ import numpy as np
 from pytest import approx, raises
 
 from ropwr import RobustPWRegression
+from ropwr.base import _choose_method
 from sklearn.datasets import load_boston
 from sklearn.exceptions import NotFittedError
 
@@ -252,18 +253,56 @@ def test_solver_ecos():
 
 
 def test_solver_ecos_regularization():
-    pass
+    splits = [5, 10, 15, 20]
+    x = X[:, -1]
+
+    pw = RobustPWRegression(solver="ecos", objective="l1",
+                            degree=2, monotonic_trend="descending")
+    pw.fit(x, y, splits)
+
+    pwrl2 = RobustPWRegression(solver="ecos", objective="l1",
+                               regularization="l2", degree=2,
+                               monotonic_trend="descending")
+    pwrl2.fit(x, y, splits)
+
+    pwrl1 = RobustPWRegression(solver="ecos", objective="l1",
+                               regularization="l1", degree=2,
+                               monotonic_trend="descending")
+    pwrl1.fit(x, y, splits)
+
+    assert np.linalg.norm(pwrl2.coef_, 2) < np.linalg.norm(pw.coef_, 2)
+    assert np.linalg.norm(pwrl2.coef_, 1) < np.linalg.norm(pw.coef_, 1)
 
 
-def test_predict():
+def test_predict_not_fitted():
     pw = RobustPWRegression()
 
     with raises(NotFittedError):
         pw.predict(x)
 
 
+def test_fit_predict():
+    splits = [5, 10, 15, 20]
+    x = X[:, -1]
+
+    pw = RobustPWRegression()
+    pred1 = pw.fit_predict(x, y, splits)
+
+    pw.fit(x, y, splits)
+    pred2 = pw.predict(x)
+
+    assert pred1 == approx(pred2, rel=1e-8)
+
+
 def test_predict_bounds():
-    pass
+    splits = [5, 10, 15, 20]
+    x = X[:, -1]
+
+    pw = RobustPWRegression()
+    pw.fit(x, y, splits)
+
+    pred = pw.predict(x, lb=5, ub=50)
+    np.all((5 <= pred) & (pred <= 50))
 
 
 def test_status():
@@ -279,3 +318,35 @@ def test_stats():
 
     assert pw.stats['n_variables'] == 10
     assert pw.stats['n_constraints'] == 14
+
+
+def test_choose_method_auto():
+    assert _choose_method(
+        "l2", 1, True, None, "auto", False, None) == "lsq_direct"
+
+    assert _choose_method(
+        "l2", 1, False, None, "auto", False, None) == "lsq_direct_separated"
+
+    assert _choose_method(
+        "l2", 1, True, "descending", "auto", False, None) == "qp"
+
+    assert _choose_method(
+        "l2", 1, False, "descending", "auto", False, None) == "qp_separated"
+
+    assert _choose_method(
+        "l2", 2, True, "descending", "auto", False, None) == "socp"
+
+    assert _choose_method(
+        "l2", 2, False, "descending", "auto", False, None) == "socp_separated"
+
+    assert _choose_method(
+        "l1", 2, True, "descending", "auto", False, None) == "socp"
+
+    assert _choose_method(
+        "l1", 2, False, "descending", "auto", False, None) == "socp_separated"
+
+    assert _choose_method(
+        "l1", 2, True, "descending", "auto", False, "l1") == "socp"
+
+    assert _choose_method(
+        "l1", 2, False, "descending", "auto", False, "l2") == "socp_separated"
