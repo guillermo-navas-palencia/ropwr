@@ -107,7 +107,7 @@ To reduce the mean squared error (MSE) and mean absolute error (MAE), we replace
 .. image:: doc/source/_images/pw_valley.png
    :target: doc/source/_images/pw_valley.png
 
-RoPRW supports four objectives functions ("l1", "l2", "huber", "quantile") and the addition of a
+RoPWR supports four objectives functions ("l1", "l2", "huber", "quantile") and the addition of a
 regularization term (l1-Lasso or l2-Ridge). Additionally, it permits imposing a lower or upper limit to the prediction. 
 
 .. code-block:: python
