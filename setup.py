@@ -72,7 +72,7 @@ setup(
     license="Apache Licence 2.0",
     url="https://github.com/guillermo-navas-palencia/ropwr",
     cmdclass={'clean': CleanCommand, 'test': PyTest},
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     install_requires=install_requires,
     tests_require=tests_require,
     classifiers=[
