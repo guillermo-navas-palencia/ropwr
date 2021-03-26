@@ -5,9 +5,9 @@ RoPWR
 .. image::  https://github.com/guillermo-navas-palencia/ropwr/workflows/CI/badge.svg
    :target: https://github.com/guillermo-navas-palencia/ropwr/workflows/CI/badge.svg
 
-.. image::  https://img.shields.io/github/license/guillermo-navas-palencia/optbinning
-   :target: https://img.shields.io/github/license/guillermo-navas-palencia/optbinning
-
+.. image::  https://img.shields.io/github/license/guillermo-navas-palencia/ropwr
+   :target: https://img.shields.io/github/license/guillermo-navas-palencia/ropwr
+   
 .. image:: https://img.shields.io/pypi/v/ropwr?color=blue
    :target: https://img.shields.io/pypi/v/ropwr?color=blue
 
