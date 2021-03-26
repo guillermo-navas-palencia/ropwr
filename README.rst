@@ -11,6 +11,9 @@ RoPWR
 .. image:: https://img.shields.io/pypi/v/ropwr?color=blue
    :target: https://img.shields.io/pypi/v/ropwr?color=blue
 
+.. image:: https://pepy.tech/badge/ropwr
+   :target: https://pepy.tech/project/ropwr
+
 The **RoPWR** library implements several mathematical programming formulations
 to compute the optimal continuous/discontinuous piecewise polynomial regression
 given a list of split points. It supports several monotonic constraints, 
