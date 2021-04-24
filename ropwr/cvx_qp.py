@@ -56,13 +56,13 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
     p = -2. * A.T.dot(y)
 
     # Objective function
-    obj = cp.Minimize(cp.quad_form(c, Q) + p.T * c)
+    obj = cp.Minimize(cp.quad_form(c, Q) + p.T @ c)
 
     # Constraints
     constraints = []
     if n_bins > 1 and continuous:
         S = matrix_S(x, splits, order)
-        constraints.append(S * c == 0)
+        constraints.append(S @ c == 0)
 
     if monotonic_trend:
         mono_cons = monotonic_trend_constraints(monotonic_trend, c, D, t)
@@ -72,9 +72,9 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
             constraints.append(mono_cons)
 
     if lb is not None:
-        constraints.append(A * c >= lb)
+        constraints.append(A @ c >= lb)
     if ub is not None:
-        constraints.append(A * c <= ub)
+        constraints.append(A @ c <= ub)
 
     # Solve
     prob = cp.Problem(obj, constraints)
@@ -120,7 +120,7 @@ def qp_separated(x, y, splits, degree, lb, ub, monotonic_trend, verbose):
         Qi = Ai.T.dot(Ai)
         pi = -2. * Ai.T.dot(yi)
 
-        obj = cp.Minimize(cp.quad_form(ci, Qi) + pi.T * ci)
+        obj = cp.Minimize(cp.quad_form(ci, Qi) + pi.T @ ci)
 
         # Constraints
         constraints = []
@@ -129,9 +129,9 @@ def qp_separated(x, y, splits, degree, lb, ub, monotonic_trend, verbose):
             constraints.append(mono_cons)
 
         if lb is not None:
-            constraints.append(Ai * ci >= lb)
+            constraints.append(Ai @ ci >= lb)
         if ub is not None:
-            constraints.append(Ai * ci <= ub)
+            constraints.append(Ai @ ci <= ub)
 
         prob = cp.Problem(obj, constraints)
         prob.solve(solver=cp.OSQP, verbose=verbose)
