@@ -10,13 +10,13 @@ import numpy as np
 
 def monotonic_trend_constraints(monotonic_trend, c, D, t=None):
     if monotonic_trend in ("ascending", "convex"):
-        return D * c >= 0
+        return D @ c >= 0
     elif monotonic_trend in ("descending", "concave"):
-        return D * c <= 0
+        return D @ c <= 0
     elif monotonic_trend == "valley":
-        return [D[:t, :] * c <= 0, D[t:, :] * c >= 0]
+        return [D[:t, :] @ c <= 0, D[t:, :] @ c >= 0]
     elif monotonic_trend == "peak":
-        return [D[:t, :] * c >= 0, D[t:, :] * c <= 0]
+        return [D[:t, :] @ c >= 0, D[t:, :] @ c <= 0]
 
 
 def compute_change_point(x, y, splits, order, monotonic_trend):
