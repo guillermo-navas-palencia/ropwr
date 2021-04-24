@@ -26,14 +26,14 @@ from .matrices import submatrix_D
 def _model_objective(A, c, y, objective, regularization, h_epsilon, quantile,
                      reg_l1, reg_l2):
     if objective == "l1":
-        obj = cp.norm(A * c - y, 1)
+        obj = cp.norm(A @ c - y, 1)
     elif objective == "l2":
-        obj = cp.norm(A * c - y, 2)
+        obj = cp.norm(A @ c - y, 2)
     elif objective == "huber":
-        obj = cp.sum(cp.huber(A * c - y, h_epsilon))
+        obj = cp.sum(cp.huber(A @ c - y, h_epsilon))
     elif objective == "quantile":
-        obj1 = 0.5 * cp.norm(A * c - y, 1)
-        obj2 = (quantile - 0.5) * cp.sum(A * c - y)
+        obj1 = 0.5 * cp.norm(A @ c - y, 1)
+        obj2 = (quantile - 0.5) * cp.sum(A @ c - y)
         obj = obj1 + obj2
 
     if regularization == "l1":
@@ -83,7 +83,7 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
     constraints = []
     if n_bins > 1 and continuous:
         S = matrix_S(x, splits, order)
-        constraints.append(S * c == 0)
+        constraints.append(S @ c == 0)
 
     if monotonic_trend:
         mono_cons = monotonic_trend_constraints(monotonic_trend, c, D, t)
@@ -93,9 +93,9 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
             constraints.append(mono_cons)
 
     if lb is not None:
-        constraints.append(A * c >= lb)
+        constraints.append(A @ c >= lb)
     if ub is not None:
-        constraints.append(A * c <= ub)
+        constraints.append(A @ c <= ub)
 
     # Solve
     prob = cp.Problem(obj, constraints)
@@ -149,9 +149,9 @@ def socp_separated(x, y, splits, degree, lb, ub, objective,
             constraints.append(mono_cons)
 
         if lb is not None:
-            constraints.append(Ai * ci >= lb)
+            constraints.append(Ai @ ci >= lb)
         if ub is not None:
-            constraints.append(Ai * ci <= ub)
+            constraints.append(Ai @ ci <= ub)
 
         prob = cp.Problem(obj, constraints)
         prob.solve(solver=cp.ECOS, verbose=verbose)
