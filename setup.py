@@ -61,7 +61,7 @@ tests_require = [
 
 setup(
     name="ropwr",
-    version="0.1.0",
+    version="0.2.0",
     description="RoPWR: Robust Piecewise Regression",
     long_description=long_description,
     author="Guillermo Navas-Palencia",
