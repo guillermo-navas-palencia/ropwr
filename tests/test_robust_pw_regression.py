@@ -127,10 +127,6 @@ def test_discontinuous_default():
     assert pw_d.coef_ == approx(pw_e.coef_, rel=1e-6)
 
 
-def test_solver_auto():
-    pass
-
-
 def test_solver_direct():
     splits = [5, 10, 15, 20]
 
@@ -272,6 +268,88 @@ def test_solver_ecos_regularization():
 
     assert np.linalg.norm(pwrl2.coef_, 2) < np.linalg.norm(pw.coef_, 2)
     assert np.linalg.norm(pwrl2.coef_, 1) < np.linalg.norm(pw.coef_, 1)
+
+
+def test_solver_highs():
+    splits = [5, 10, 15, 20]
+    x = X[:, -1]
+
+    with raises(ValueError):
+        pw = RobustPWRegression(solver="highs", objective="l2")
+        pw.fit(x, y, splits)
+
+    with raises(ValueError):
+        pw = RobustPWRegression(solver="highs", objective="l1",
+                                regularization="l2")
+        pw.fit(x, y, splits)
+
+    # Monotonic trend: descending
+    for degree in (0, 1, 2):
+        pw = RobustPWRegression(
+            solver="highs", objective="l1", degree=degree,
+            monotonic_trend="descending")
+        pw.fit(x, y, splits)
+
+        pred = pw.predict(np.sort(x))
+        diff = np.max(pred[1:] - pred[:-1])
+        assert diff <= 1e-3
+
+    # Bounds
+    x = X[:, 2]
+    for continuous in (True, False):
+        for degree in (1, 2):
+            pw = RobustPWRegression(solver="highs", objective="l1",
+                                    degree=degree, quantile=0.4,
+                                    monotonic_trend="descending",
+                                    regularization="l1",
+                                    reg_l1=0.5,
+                                    continuous=continuous)
+            pw.fit(x, y, splits, lb=5, ub=50)
+            pred = pw.predict(x)
+            assert np.all((5 <= pred) & (pred <= 50))
+
+
+def test_solver_scs():
+    splits = [5, 10, 15, 20]
+    x = X[:, -1]
+
+    # Monotonic trend: descending
+    for degree in (0, 1, 2):
+        pw = RobustPWRegression(
+            solver="scs", objective="l1", degree=degree,
+            monotonic_trend="descending")
+        pw.fit(x, y, splits)
+
+        pred = pw.predict(np.sort(x))
+        diff = np.max(pred[1:] - pred[:-1])
+        assert diff <= 1e-3
+
+    # Monotonic trend: descending + continuous=False
+    pw = RobustPWRegression(solver="scs", objective="huber", degree=1,
+                            monotonic_trend="descending", continuous=False)
+    pw.fit(x, y, splits)
+    assert np.all(pw.coef_[:, 1] <= 0)
+
+    # Bounds
+    x = X[:, 2]
+    for continuous in (True, False):
+        for degree in (1, 2):
+            pw = RobustPWRegression(solver="scs", objective="quantile",
+                                    degree=degree, quantile=0.4,
+                                    monotonic_trend="descending",
+                                    continuous=continuous)
+            pw.fit(x, y, splits, lb=5, ub=50)
+            pred = pw.predict(x)
+            assert np.all((5 <= pred) & (pred <= 50))
+
+    for monotonic_trend in ("descending", "convex", "peak", "valley"):
+        for degree in (1, 2):
+            print(monotonic_trend, degree)
+            pw = RobustPWRegression(solver="scs", degree=degree,
+                                    monotonic_trend=monotonic_trend)
+            pw.fit(x, y, splits, lb=5, ub=50)
+            pred = pw.predict(x)
+            assert np.all((5 <= pred) & (pred <= 50))
 
 
 def test_predict_not_fitted():

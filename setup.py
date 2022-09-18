@@ -50,6 +50,7 @@ install_requires = [
     'cvxpy>=1.0',
     'numpy>=1.16',
     'scikit-learn>=0.22',
+    'scipy>=1.6.1'
 ]
 
 # test requirements
@@ -59,9 +60,15 @@ tests_require = [
 ]
 
 
+# Read version file
+version_info = {}
+with open("ropwr/_version.py") as f:
+    exec(f.read(), version_info)
+
+
 setup(
     name="ropwr",
-    version="0.2.0",
+    version=version_info['__version__'],
     description="RoPWR: Robust Piecewise Regression",
     long_description=long_description,
     author="Guillermo Navas-Palencia",

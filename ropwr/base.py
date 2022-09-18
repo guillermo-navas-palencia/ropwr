@@ -54,9 +54,10 @@ def _check_parameters(objective, regularization, degree, continuous,
             raise ValueError('Option monotonic trend "convex", "concave", '
                              '"peak" and "valley" valid if continuous=True.')
 
-    if solver not in ("auto", "ecos", "osqp", "direct"):
+    if solver not in ("auto", "ecos", "osqp", "direct", "scs", "highs"):
         raise ValueError('Invalid value for solver. Allowed string '
-                         'values are "auto", "ecos", "osqp" and "direct".')
+                         'values are "auto", "ecos", "osqp", "direct", '
+                         '"scs" and "highs".')
 
     if not isinstance(h_epsilon, numbers.Number) or h_epsilon < 1.0:
         raise ValueError("h_epsilon must a number >= 1.0; got {}."
@@ -129,11 +130,20 @@ def _choose_method(objective, degree, continuous, monotonic_trend, solver,
         else:
             raise ValueError('solver="osqp" only for objective="l2" and '
                              'regularization=None.')
-    elif solver == "ecos":
+    elif solver in ("ecos", "scs"):
         if continuous or degree == 0:
             return "socp"
         else:
             return "socp_separated"
+    elif solver == "highs":
+        if objective == "l1" and regularization in (None, "l1"):
+            if continuous:
+                return "socp"
+            else:
+                return "socp_separated"
+        else:
+            raise ValueError('solver="highs" only for objective="l1" and '
+                             'regularization in (None, "l1").')
 
 
 def _check_bounds(lb, ub):
@@ -210,7 +220,9 @@ class RobustPWRegression(BaseEstimator):
         <https://github.com/embotech/ecos>`_, `"osqp"
         <https://github.com/oxfordcontrol/osqp>`_, "direct", to choose the
         direct solver, and "auto", to choose the most appropriate solver for
-        the problem.
+        the problem. Version 0.3.0 added support to solvers
+        `"scs" <https://github.com/cvxgrp/scs>`_ and `"highs"
+        <https://github.com/ERGO-Code/HiGHS>`_.
 
     h_epsilon: float (default=1.35)
         The parameter h_epsilon used when ``objective="huber"``, controls the
@@ -312,12 +324,12 @@ class RobustPWRegression(BaseEstimator):
             c, info = socp(xs, ys, splits, self.degree, self.continuous, lb,
                            ub, self.objective, self.monotonic_trend,
                            self.h_epsilon, self.quantile, self.regularization,
-                           self.reg_l1, self.reg_l2, self.verbose)
+                           self.reg_l1, self.reg_l2, self.solver, self.verbose)
         elif _method == "socp_separated":
             c, info = socp_separated(xs, ys, splits, self.degree, lb, ub,
                                      self.objective, self.monotonic_trend,
                                      self.h_epsilon, self.quantile,
-                                     self.verbose)
+                                     self.solver, self.verbose)
         elif _method == "qp":
             c, info = qp(xs, ys, splits, self.degree, self.continuous, lb, ub,
                          self.monotonic_trend, self.verbose)

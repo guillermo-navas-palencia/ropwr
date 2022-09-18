@@ -10,8 +10,8 @@ The **RoPWR** library implements several mathematical programming formulations
 to compute the optimal continuous/discontinuous piecewise polynomial regression
 given a list of split points. It supports several monotonic constraints, 
 objective functions and regularizations. The library is written in Python and
-relies on cvxpy (ECOS and OSQP solvers) to solve the underlying optimization
-problems. Other formulations are solved using a direct approach.
+relies on cvxpy (ECOS, OSQP, SCS and HIGHS solvers) to solve the underlying
+optimization problems. Other formulations are solved using a direct approach.
 
 
 .. toctree::

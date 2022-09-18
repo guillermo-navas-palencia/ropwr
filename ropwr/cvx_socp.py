@@ -45,7 +45,7 @@ def _model_objective(A, c, y, objective, regularization, h_epsilon, quantile,
 
 
 def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
-         h_epsilon, quantile, regularization, reg_l1, reg_l2, verbose):
+         h_epsilon, quantile, regularization, reg_l1, reg_l2, solver, verbose):
 
     # Parameters
     n_bins = len(splits) + 1
@@ -99,7 +99,19 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
 
     # Solve
     prob = cp.Problem(obj, constraints)
-    prob.solve(solver=cp.ECOS, verbose=verbose)
+
+    if solver in ("auto", "ecos", "scs"):
+        if solver in ("auto", "ecos"):
+            solve_options = {'solver': cp.ECOS, 'verbose': verbose}
+        else:
+            solve_options = {'solver': cp.SCS, 'verbose': verbose}
+    elif solver == "highs":
+        solve_options = {'solver': cp.SCIPY}
+
+    if solver == "highs":
+        prob.solve(**solve_options, scipy_options={'method': "highs"})
+    else:
+        prob.solve(**solve_options)
 
     size_metrics = cp.problems.problem.SizeMetrics(prob)
     status = prob.status
@@ -109,7 +121,15 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
 
 
 def socp_separated(x, y, splits, degree, lb, ub, objective,
-                   monotonic_trend, h_epsilon, quantile, verbose):
+                   monotonic_trend, h_epsilon, quantile, solver, verbose):
+
+    if solver in ("ecos", "scs"):
+        if solver == "ecos":
+            solve_options = {'solver': cp.ECOS, 'verbose': verbose}
+        else:
+            solve_options = {'solver': cp.SCS, 'verbose': verbose}
+    elif solver == "highs":
+        solve_options = {'solver': cp.SCIPY}
 
     order = degree + 1
     n_bins = len(splits) + 1
@@ -154,7 +174,11 @@ def socp_separated(x, y, splits, degree, lb, ub, objective,
             constraints.append(Ai @ ci <= ub)
 
         prob = cp.Problem(obj, constraints)
-        prob.solve(solver=cp.ECOS, verbose=verbose)
+
+        if solver == "highs":
+            prob.solve(**solve_options, scipy_options={'method': "highs"})
+        else:
+            prob.solve(**solve_options)
 
         size_metrics = cp.problems.problem.SizeMetrics(prob)
         status = prob.status

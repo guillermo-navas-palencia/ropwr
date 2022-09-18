@@ -18,13 +18,13 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'ropwr'
-copyright = '2020, Guillermo Navas-Palencia'
+copyright = '2020 - 2022, Guillermo Navas-Palencia'
 author = 'Guillermo Navas-Palencia'
 
 # The short X.Y version
-version = '0.2.0'
+version = '0.3.0'
 # The full version, including alpha/beta/rc tags
-release = '0.2.0'
+release = '0.3.0'
 
 
 # -- General configuration ---------------------------------------------------
