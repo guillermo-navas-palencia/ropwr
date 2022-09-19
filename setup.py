@@ -47,7 +47,7 @@ class PyTest(TestCommand):
 
 # install requirements
 install_requires = [
-    'cvxpy>=1.0',
+    'cvxpy>=1.1.14',
     'numpy>=1.16',
     'scikit-learn>=0.22',
     'scipy>=1.6.1'
