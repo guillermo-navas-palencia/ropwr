@@ -82,6 +82,14 @@ def test_splits():
         pw = RobustPWRegression()
         pw.fit(x, y, splits=[5, 5, 10])
 
+    with raises(ValueError):
+        pw = RobustPWRegression()
+        pw.fit(x, y, splits="new_method")
+
+    with raises(ValueError):
+        pw = RobustPWRegression()
+        pw.fit(x, y, splits="quantile", n_bins=1)
+
 
 def test_bounds():
     with raises(TypeError):
@@ -350,6 +358,36 @@ def test_solver_scs():
             pw.fit(x, y, splits, lb=5, ub=50)
             pred = pw.predict(x)
             assert np.all((5 <= pred) & (pred <= 50))
+
+
+def test_quantile():
+    x = X[:, -1]
+
+    # Monotonic trend: descending
+    for degree in (0, 1, 2):
+        pw = RobustPWRegression(
+            solver="ecos", objective="l2", degree=degree,
+            monotonic_trend="descending")
+        pw.fit(x, y, splits="quantile")
+
+        pred = pw.predict(np.sort(x))
+        diff = np.max(pred[1:] - pred[:-1])
+        assert diff <= 1e-3
+
+
+def test_uniform():
+    x = X[:, -1]
+
+    # Monotonic trend: descending
+    for degree in (0, 1, 2):
+        pw = RobustPWRegression(
+            solver="ecos", objective="l2", degree=degree,
+            monotonic_trend="descending")
+        pw.fit(x, y, splits="uniform")
+
+        pred = pw.predict(np.sort(x))
+        diff = np.max(pred[1:] - pred[:-1])
+        assert diff <= 1e-3
 
 
 def test_predict_not_fitted():
