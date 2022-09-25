@@ -9,6 +9,8 @@ objective.
 import cvxpy as cp
 import numpy as np
 
+from cvxpy.atoms.affine.wraps import psd_wrap
+
 from .cvx import compute_change_point
 from .cvx import monotonic_trend_constraints
 from .cvx import problem_info
@@ -52,7 +54,7 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
     nvar = order * n_bins
     c = cp.Variable(nvar)
 
-    Q = A.T.dot(A)
+    Q = psd_wrap(A.T.dot(A))
     p = -2. * A.T.dot(y)
 
     # Objective function
@@ -117,7 +119,7 @@ def qp_separated(x, y, splits, degree, lb, ub, monotonic_trend, verbose):
         ci = cp.Variable(order)
 
         # Objective function
-        Qi = Ai.T.dot(Ai)
+        Qi = psd_wrap(Ai.T.dot(Ai))
         pi = -2. * Ai.T.dot(yi)
 
         obj = cp.Minimize(cp.quad_form(ci, Qi) + pi.T @ ci)
