@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+Version 0.4.0 (2022-09-27)
+--------------------------
+
+New features:
+
+   - Add support to various split methods.
+
+
 Version 0.3.0 (2022-09-20)
 --------------------------
 
