@@ -383,7 +383,7 @@ def test_uniform():
         pw = RobustPWRegression(
             solver="ecos", objective="l2", degree=degree,
             monotonic_trend="descending")
-        pw.fit(x, y, splits="uniform")
+        pw.fit(x, y, splits="uniform", n_bins=3)
 
         pred = pw.predict(np.sort(x))
         diff = np.max(pred[1:] - pred[:-1])
