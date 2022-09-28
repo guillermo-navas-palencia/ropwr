@@ -164,8 +164,9 @@ def _check_bounds(lb, ub):
 
 
 def _check_splits(x, splits, n_bins, monotonic_trend):
-    if not isinstance(splits, (str, list, np.ndarray)):
-        raise TypeError("splits must be a string, list or numpy.ndarray.")
+    if splits is not None:
+        if not isinstance(splits, (str, list, np.ndarray)):
+            raise TypeError("splits must be a string, list or numpy.ndarray.")
 
     if isinstance(splits, str):
         if splits not in ("uniform", "quantile"):
@@ -183,10 +184,13 @@ def _check_splits(x, splits, n_bins, monotonic_trend):
         est.fit(x.reshape(-1, 1))
         return est.bin_edges_[0][1:-1]
     else:
-        if not len(splits):
+        if splits is None or not len(splits):
             if monotonic_trend in ("peak", "valley"):
                 raise ValueError('monotonic trend "peak" and "valley" require '
                                  'a list of splits.')
+            if splits is None:
+                return []
+
             return splits
         else:
             user_splits = check_array(splits, ensure_2d=False,

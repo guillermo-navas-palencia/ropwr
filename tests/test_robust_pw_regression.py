@@ -79,6 +79,10 @@ def test_splits():
         pw.fit(x, y, splits=[])
 
     with raises(ValueError):
+        pw = RobustPWRegression(monotonic_trend="peak")
+        pw.fit(x, y, splits=None)
+
+    with raises(ValueError):
         pw = RobustPWRegression()
         pw.fit(x, y, splits=[5, 5, 10])
 
@@ -250,7 +254,7 @@ def test_solver_ecos():
                 solver="ecos", objective="l1", degree=degree,
                 monotonic_trend=monotonic_trend)
 
-            pw.fit(x, y, splits=[], lb=5, ub=50)
+            pw.fit(x, y, splits=None, lb=5, ub=50)
             pred = pw.predict(x)
             eps = 1e-6
             assert np.all((5 - eps <= pred) & (pred <= 50 + eps))
