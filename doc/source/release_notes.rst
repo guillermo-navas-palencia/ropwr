@@ -1,12 +1,17 @@
 Release Notes
 =============
 
-Version 0.4.0 (2022-09-28)
+Version 0.4.0 (2022-10-25)
 --------------------------
 
 New features:
 
    - Add support to various split methods.
+
+Bugfixes:
+
+   - Handle solver 'auto' for discontinuous SOCP model
+   - Solve OSQP convergence issues using ``psd_wrap`` (`Issue 1424 <https://github.com/cvxpy/cvxpy/issues/1424>`_).
 
 
 Version 0.3.0 (2022-09-20)
