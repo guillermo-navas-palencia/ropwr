@@ -10,6 +10,7 @@ import numbers
 import numpy as np
 
 from sklearn.base import BaseEstimator
+from sklearn.preprocessing import KBinsDiscretizer
 from sklearn.utils import check_array
 from sklearn.utils import check_consistent_length
 from sklearn.exceptions import NotFittedError
@@ -162,25 +163,44 @@ def _check_bounds(lb, ub):
             raise ValueError("lb must be <= ub.")
 
 
-def _check_splits(splits, monotonic_trend):
-    if not isinstance(splits, (list, np.ndarray)):
-        raise TypeError("splits must be a list or numpy.ndarray.")
+def _check_splits(x, splits, n_bins, monotonic_trend):
+    if splits is not None:
+        if not isinstance(splits, (str, list, np.ndarray)):
+            raise TypeError("splits must be a string, list or numpy.ndarray.")
 
-    if not len(splits):
-        if monotonic_trend in ("peak", "valley"):
-            raise ValueError('monotonic trend "peak" and "valley" require a '
-                             'list of splits.')
+    if isinstance(splits, str):
+        if splits not in ("uniform", "quantile"):
+            raise ValueError('Invalid value for splits. Allowed string values '
+                             'are "uniform" and "quantile".')
 
-        return splits
+        if n_bins is not None and n_bins < 2:
+            raise ValueError("n_bins must >= 2.")
+
+        if n_bins is None:
+            est = KBinsDiscretizer(strategy=splits)
+        else:
+            est = KBinsDiscretizer(n_bins=n_bins, strategy=splits)
+
+        est.fit(x.reshape(-1, 1))
+        return est.bin_edges_[0][1:-1]
     else:
-        user_splits = check_array(splits, ensure_2d=False,
-                                  force_all_finite=True)
+        if splits is None or not len(splits):
+            if monotonic_trend in ("peak", "valley"):
+                raise ValueError('monotonic trend "peak" and "valley" require '
+                                 'a list of splits.')
+            if splits is None:
+                return []
 
-        if len(set(user_splits)) != len(user_splits):
-            raise ValueError("splits are not unique.")
+            return splits
+        else:
+            user_splits = check_array(splits, ensure_2d=False,
+                                      force_all_finite=True)
 
-        sorted_idx = np.argsort(user_splits)
-        user_splits = user_splits[sorted_idx]
+            if len(set(user_splits)) != len(user_splits):
+                raise ValueError("splits are not unique.")
+
+            sorted_idx = np.argsort(user_splits)
+            user_splits = user_splits[sorted_idx]
 
         return user_splits
 
@@ -269,7 +289,7 @@ class RobustPWRegression(BaseEstimator):
 
         self._is_fitted = False
 
-    def fit(self, x, y, splits, lb=None, ub=None):
+    def fit(self, x, y, splits, n_bins=None, lb=None, ub=None):
         """Fit the piecewise regression according to the given training data.
 
         Parameters
@@ -279,6 +299,14 @@ class RobustPWRegression(BaseEstimator):
 
         y : array-like, shape = (n_samples,)
             Target vector relative to x.
+
+        splits : str or array-like.
+            If split array is not provided, the available methods are 'uniform'
+            and 'quantile'.
+
+        n_bins : int or None (default=None)
+            The number of bins to produce. Only applicable if splits is
+            'uniform' or 'quantile'.
 
         lb : float or None (default=None)
             Add constraints to avoid values below the lower bound lb.
@@ -303,7 +331,7 @@ class RobustPWRegression(BaseEstimator):
         ys = y[idx]
 
         # Check user splits
-        _check_splits(splits, self.monotonic_trend)
+        splits = _check_splits(xs, splits, n_bins, self.monotonic_trend)
 
         # Check bounds
         bounded = (lb is not None or ub is not None)
@@ -351,7 +379,7 @@ class RobustPWRegression(BaseEstimator):
 
         return self
 
-    def fit_predict(self, x, y, splits, lb=None, ub=None):
+    def fit_predict(self, x, y, splits, n_bins=None, lb=None, ub=None):
         """Fit the piecewise regression according to the given training data,
         then predict.
 
@@ -362,6 +390,14 @@ class RobustPWRegression(BaseEstimator):
 
         y : array-like, shape = (n_samples,)
             Target vector relative to x.
+
+        splits : str or array-like.
+            If split array is not provided, the available methods are 'uniform'
+            and 'quantile'.
+
+        n_bins : int or None (default=None)
+            The number of bins to produce. Only applicable if splits is
+            'uniform' or 'quantile'.
 
         lb : float or None (default=None)
             Fit impose constraints to satisfy that values are greater or equal
@@ -378,7 +414,7 @@ class RobustPWRegression(BaseEstimator):
         p : numpy array, shape = (n_samples,)
             Predicted array.
         """
-        return self.fit(x, y, splits, lb, ub).predict(x, lb, ub)
+        return self.fit(x, y, splits, n_bins, lb, ub).predict(x, lb, ub)
 
     def predict(self, x, lb=None, ub=None):
         """Predict using the piecewise regression.

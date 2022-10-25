@@ -123,8 +123,8 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
 def socp_separated(x, y, splits, degree, lb, ub, objective,
                    monotonic_trend, h_epsilon, quantile, solver, verbose):
 
-    if solver in ("ecos", "scs"):
-        if solver == "ecos":
+    if solver in ("auto", "ecos", "scs"):
+        if solver in ("auto", "ecos"):
             solve_options = {'solver': cp.ECOS, 'verbose': verbose}
         else:
             solve_options = {'solver': cp.SCS, 'verbose': verbose}

@@ -91,6 +91,14 @@ If the trend of the relationship with the target is unclear, use the default pie
 .. image:: doc/source/_images/pw_default.png
    :target: doc/source/_images/pw_default.png
 
+Since version 0.4.0 two unsupervised binning techniques, equal-size ("uniform") and equal-frequency interval ("quantile") from scikit-learn KBinsDiscretizer are available using parameters ``splits="quantile"`` or ``splits="uniform"`` and providing the desired number of bins using ``n_bins`` parameter. The previous code is equivalent to
+
+.. code-block:: python
+
+   pw = RobustPWRegression()
+   pw.fit(x, y, splits="quantile", n_bins=10)
+
+
 The relationship with the target exhibits a sort of U-shaped trend. Let's try to force convexity.
 
 .. code-block:: python
