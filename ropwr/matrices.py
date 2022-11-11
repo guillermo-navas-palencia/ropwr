@@ -7,6 +7,8 @@ Auxiliary functions to create model matrices.
 
 import numpy as np
 
+from numpy.polynomial.polynomial import polyder
+
 
 def matrix_A(x, splits, order):
     n = len(x)
@@ -42,6 +44,18 @@ def matrix_S(x, splits, order):
         r = np.power(s, exporder)
         S[i, order * i: order * (i + 1)] = r
         S[i, order * (i + 1): order * (i + 2)] = -r
+
+    if order >= 3:
+        for m in range(1, order - 1):
+            SD = np.zeros((n_splits, n_bins * order))
+            d = np.zeros(order)
+            d[m:] = polyder(np.ones(order), m)
+            for i, s in enumerate(splits):
+                rd = np.array([d[k] * s ** (k-m) for k in range(order)])
+                SD[i, order * i: order * (i + 1)] = rd
+                SD[i, order * (i + 1): order * (i + 2)] = -rd
+
+            S = np.r_[S, SD]
 
     return S
 
@@ -81,12 +95,15 @@ def matrix_A_D(x, splits, order):
         ni = len(xi)
 
         pxi = np.ones(ni)
-        qxi = pxi / xi
+        qxi = None
         for k, j in enumerate(range(order * i, order * (i + 1))):
             A[cn: cn + ni, j] = pxi
-            D[cn: cn + ni, j] = k * qxi
+            if k <= 1:
+                D[cn: cn + ni, j] = k
+            else:
+                D[cn: cn + ni, j] = k * qxi
+            qxi = pxi
             pxi *= xi
-            qxi *= xi
 
         cn += ni
 
@@ -112,10 +129,13 @@ def matrix_H(x, splits, order):
             xi = x[indices == i]
             ni = len(xi)
 
-            qxi = np.ones(ni) / (xi * xi)
+            qxi = np.ones(ni)
             for k, j in enumerate(range(order * i, order * (i + 1))):
-                H[cn: cn + ni, j] = k * (k - 1) * qxi
-                qxi *= xi
+                if k <= 2:
+                    H[cn: cn + ni, j] = k * (k - 1)
+                else:
+                    qxi *= xi
+                    H[cn: cn + ni, j] = k * (k - 1) * qxi
 
             cn += ni
 
@@ -138,12 +158,15 @@ def matrix_A_H(x, splits, order):
         ni = len(xi)
 
         pxi = np.ones(ni)
-        qxi = pxi / (xi * xi)
+        qxi = np.ones(ni)
         for k, j in enumerate(range(order * i, order * (i + 1))):
             A[cn: cn + ni, j] = pxi
-            H[cn: cn + ni, j] = k * (k - 1) * qxi
+            if k <= 2:
+                H[cn: cn + ni, j] = k * (k - 1)
+            else:
+                qxi *= xi
+                H[cn: cn + ni, j] = k * (k - 1) * qxi
             pxi *= xi
-            qxi *= xi
 
         cn += ni
 
@@ -171,11 +194,14 @@ def submatrix_A_D(ni, xi, order):
     Ai = np.zeros((ni, order))
     Di = np.zeros((ni, order))
     pxi = np.ones(ni)
-    qxi = pxi / xi
+    qxi = None
     for j in range(order):
         Ai[:, j] = pxi
-        Di[:, j] = j * qxi
+        if j <= 1:
+            Di[:, j] = j
+        else:
+            Di[:, j] = j * qxi
+        qxi = pxi
         pxi *= xi
-        qxi *= xi
 
     return Ai, Di

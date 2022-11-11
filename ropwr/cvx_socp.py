@@ -45,13 +45,15 @@ def _model_objective(A, c, y, objective, regularization, h_epsilon, quantile,
 
 
 def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
-         h_epsilon, quantile, regularization, reg_l1, reg_l2, solver, verbose):
+         h_epsilon, quantile, regularization, reg_l1, reg_l2, solver, max_iter,
+         verbose):
 
     # Parameters
     n_bins = len(splits) + 1
     order = degree + 1
 
     t = None
+    ti = None
     if monotonic_trend in ("ascending", "descending", "peak", "valley"):
         if order <= 2:
             A = matrix_A(x, splits, order)
@@ -60,7 +62,7 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
             A, D = matrix_A_D(x, splits, order)
 
         if monotonic_trend in ("peak", "valley"):
-            t = compute_change_point(x, y, splits, order, monotonic_trend)
+            t, ti = compute_change_point(x, y, splits, order, monotonic_trend)
     elif monotonic_trend in ("convex", "concave"):
         if order <= 2:
             A = matrix_A(x, splits, order)
@@ -93,9 +95,19 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
             constraints.append(mono_cons)
 
     if lb is not None:
-        constraints.append(A @ c >= lb)
+        if monotonic_trend in ("ascending", "descending"):
+            constraints.append(A[[0, -1], :] @ c >= lb)
+        elif monotonic_trend in ("peak", "valley"):
+            constraints.append(A[[0, ti, -1], :] @ c >= lb)
+        else:
+            constraints.append(A @ c >= lb)
     if ub is not None:
-        constraints.append(A @ c <= ub)
+        if monotonic_trend in ("ascending", "descending"):
+            constraints.append(A[[0, -1], :] @ c <= ub)
+        elif monotonic_trend in ("peak", "valley"):
+            constraints.append(A[[0, ti, -1], :] @ c <= ub)
+        else:
+            constraints.append(A @ c <= ub)
 
     # Solve
     prob = cp.Problem(obj, constraints)
@@ -105,6 +117,9 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
             solve_options = {'solver': cp.ECOS, 'verbose': verbose}
         else:
             solve_options = {'solver': cp.SCS, 'verbose': verbose}
+
+        if max_iter is not None:
+            solve_options['max_iters'] = max_iter
     elif solver == "highs":
         solve_options = {'solver': cp.SCIPY}
 
@@ -121,13 +136,17 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
 
 
 def socp_separated(x, y, splits, degree, lb, ub, objective,
-                   monotonic_trend, h_epsilon, quantile, solver, verbose):
+                   monotonic_trend, h_epsilon, quantile, solver, max_iter,
+                   verbose):
 
     if solver in ("auto", "ecos", "scs"):
         if solver in ("auto", "ecos"):
             solve_options = {'solver': cp.ECOS, 'verbose': verbose}
         else:
             solve_options = {'solver': cp.SCS, 'verbose': verbose}
+
+        if max_iter is not None:
+            solve_options['max_iters'] = max_iter
     elif solver == "highs":
         solve_options = {'solver': cp.SCIPY}
 

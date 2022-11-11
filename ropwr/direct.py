@@ -8,41 +8,21 @@ constraints.
 
 import numpy as np
 
+from .matrices import matrix_A
+from .matrices import matrix_S
 from .matrices import submatrix_A
 
 
 def lsq_direct(x, y, splits, degree):
     order = degree + 1
-    n = len(x)
     n_splits = len(splits)
     n_bins = n_splits + 1
 
+    A = matrix_A(x, splits, order)
+    S = matrix_S(x, splits, order)
+
     nA = n_bins * order
-
-    A = np.zeros((n, nA))
-    S = np.zeros((n_splits, nA))
-
-    indices = np.searchsorted(splits, x, side='right')
-
-    cn = 0
-    for i in range(n_bins):
-        xi = x[indices == i]
-        ni = len(xi)
-
-        pxi = np.ones(ni)
-        for j in range(order * i, order * (i + 1)):
-            A[cn: cn + ni, j] = pxi
-            pxi *= xi
-
-        cn += ni
-
-    exporder = np.arange(order)
-    for i, s in enumerate(splits):
-        r = np.power(s, exporder)
-        S[i, order * i: order * (i + 1)] = r
-        S[i, order * (i + 1): order * (i + 2)] = -r
-
-    nM = nA + n_splits
+    nM = nA + S.shape[0]
     M = np.zeros((nM, nM))
 
     M[:nA, :nA] = 2 * A.T.dot(A)

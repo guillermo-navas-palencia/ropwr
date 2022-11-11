@@ -25,12 +25,14 @@ from .matrices import submatrix_A_D
 from .matrices import submatrix_D
 
 
-def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
+def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, max_iter,
+       verbose):
     # Parameters
     n_bins = len(splits) + 1
     order = degree + 1
 
     t = None
+    ti = None
     if monotonic_trend in ("ascending", "descending", "peak", "valley"):
         if order <= 2:
             A = matrix_A(x, splits, order)
@@ -39,7 +41,7 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
             A, D = matrix_A_D(x, splits, order)
 
         if monotonic_trend in ("peak", "valley"):
-            t = compute_change_point(x, y, splits, order, monotonic_trend)
+            t, ti = compute_change_point(x, y, splits, order, monotonic_trend)
     elif monotonic_trend in ("convex", "concave"):
         if order <= 2:
             A = matrix_A(x, splits, order)
@@ -74,13 +76,28 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
             constraints.append(mono_cons)
 
     if lb is not None:
-        constraints.append(A @ c >= lb)
+        if monotonic_trend in ("ascending", "descending"):
+            constraints.append(A[[0, -1], :] @ c >= lb)
+        elif monotonic_trend in ("peak", "valley"):
+            constraints.append(A[[0, ti, -1], :] @ c >= lb)
+        else:
+            constraints.append(A @ c >= lb)
     if ub is not None:
-        constraints.append(A @ c <= ub)
+        if monotonic_trend in ("ascending", "descending"):
+            constraints.append(A[[0, -1], :] @ c <= ub)
+        elif monotonic_trend in ("peak", "valley"):
+            constraints.append(A[[0, ti, -1], :] @ c <= ub)
+        else:
+            constraints.append(A @ c <= ub)
 
     # Solve
     prob = cp.Problem(obj, constraints)
-    prob.solve(solver=cp.OSQP, verbose=verbose)
+
+    solve_options = {'solver': cp.OSQP, 'verbose': verbose}
+    if max_iter is not None:
+        solve_options['max_iter'] = max_iter
+
+    prob.solve(**solve_options)
 
     size_metrics = cp.problems.problem.SizeMetrics(prob)
     status = prob.status
@@ -89,8 +106,13 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, verbose):
     return c.value.reshape((n_bins, order)), info
 
 
-def qp_separated(x, y, splits, degree, lb, ub, monotonic_trend, verbose):
-    # Parameters
+def qp_separated(x, y, splits, degree, lb, ub, monotonic_trend, max_iter,
+                 verbose):
+
+    solve_options = {'solver': cp.OSQP, 'verbose': verbose}
+    if max_iter is not None:
+        solve_options['max_iter'] = max_iter
+
     order = degree + 1
     n_bins = len(splits) + 1
 
@@ -136,7 +158,7 @@ def qp_separated(x, y, splits, degree, lb, ub, monotonic_trend, verbose):
             constraints.append(Ai @ ci <= ub)
 
         prob = cp.Problem(obj, constraints)
-        prob.solve(solver=cp.OSQP, verbose=verbose)
+        prob.solve(**solve_options)
 
         size_metrics = cp.problems.problem.SizeMetrics(prob)
         status = prob.status

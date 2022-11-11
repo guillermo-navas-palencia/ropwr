@@ -25,7 +25,7 @@ from .cvx_qp import qp_separated
 
 def _check_parameters(objective, regularization, degree, continuous,
                       monotonic_trend, solver, h_epsilon, quantile, reg_l1,
-                      reg_l2, verbose):
+                      reg_l2, max_iter, verbose):
 
     if objective not in ("l1", "l2", "huber", "quantile"):
         raise ValueError('Invalid value for objective. Allowed string '
@@ -75,6 +75,11 @@ def _check_parameters(objective, regularization, degree, continuous,
     if not isinstance(reg_l2, numbers.Number) or reg_l2 < 0.0:
         raise ValueError("reg_l2 must be a positive value; got {}."
                          .format(reg_l2))
+
+    if max_iter is not None:
+        if not isinstance(max_iter, numbers.Integral) or max_iter <= 0:
+            raise ValueError("max_iter must be an integer >= 1; got {}."
+                             .format(max_iter))
 
     if not isinstance(verbose, bool):
         raise TypeError("verbose must be a boolean; got {}.".format(verbose))
@@ -260,6 +265,14 @@ class RobustPWRegression(BaseEstimator):
         L2 regularization term. Increasing this value will smooth the
         regression model. Only applicable if ``regularization="l2"``.
 
+    max_iter : int or None (default=None)
+        Maximum number of iterations. If ``max_iter=None``, the default maximum
+        number of iterations for each solver is set. See `solver options
+        <https://www.cvxpy.org/tutorial/advanced/index.html#
+        setting-solver-options>`_.
+
+        .. versionadded:: 0.5.0
+
     verbose : bool (default=False)
         Enable verbose output.
 
@@ -271,7 +284,7 @@ class RobustPWRegression(BaseEstimator):
     def __init__(self, objective="l2", degree=1, continuous=True,
                  monotonic_trend=None, solver="auto", h_epsilon=1.35,
                  quantile=0.5, regularization=None, reg_l1=1.0, reg_l2=1.0,
-                 verbose=False):
+                 max_iter=None, verbose=False):
 
         self.objective = objective
         self.degree = degree
@@ -283,6 +296,7 @@ class RobustPWRegression(BaseEstimator):
         self.regularization = regularization
         self.reg_l1 = reg_l1
         self.reg_l2 = reg_l2
+        self.max_iter = max_iter
         self.verbose = verbose
 
         self.coef_ = None
@@ -307,6 +321,8 @@ class RobustPWRegression(BaseEstimator):
         n_bins : int or None (default=None)
             The number of bins to produce. Only applicable if splits is
             'uniform' or 'quantile'.
+
+            .. versionadded:: 0.4.0
 
         lb : float or None (default=None)
             Add constraints to avoid values below the lower bound lb.
@@ -352,18 +368,20 @@ class RobustPWRegression(BaseEstimator):
             c, info = socp(xs, ys, splits, self.degree, self.continuous, lb,
                            ub, self.objective, self.monotonic_trend,
                            self.h_epsilon, self.quantile, self.regularization,
-                           self.reg_l1, self.reg_l2, self.solver, self.verbose)
+                           self.reg_l1, self.reg_l2, self.solver,
+                           self.max_iter, self.verbose)
         elif _method == "socp_separated":
             c, info = socp_separated(xs, ys, splits, self.degree, lb, ub,
                                      self.objective, self.monotonic_trend,
                                      self.h_epsilon, self.quantile,
-                                     self.solver, self.verbose)
+                                     self.solver, self.max_iter, self.verbose)
         elif _method == "qp":
             c, info = qp(xs, ys, splits, self.degree, self.continuous, lb, ub,
-                         self.monotonic_trend, self.verbose)
+                         self.monotonic_trend, self.max_iter, self.verbose)
         elif _method == "qp_separated":
             c, info = qp_separated(xs, ys, splits, self.degree, lb, ub,
-                                   self.monotonic_trend, self.verbose)
+                                   self.monotonic_trend, self.max_iter,
+                                   self.verbose)
 
         self.coef_ = c
 
