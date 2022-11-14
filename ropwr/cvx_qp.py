@@ -25,8 +25,8 @@ from .matrices import submatrix_A_D
 from .matrices import submatrix_D
 
 
-def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, max_iter,
-       verbose):
+def qp(x, y, splits, degree, continuous, continuous_deriv, lb, ub,
+       monotonic_trend, max_iter, verbose):
     # Parameters
     n_bins = len(splits) + 1
     order = degree + 1
@@ -65,7 +65,7 @@ def qp(x, y, splits, degree, continuous, lb, ub, monotonic_trend, max_iter,
     # Constraints
     constraints = []
     if n_bins > 1 and continuous:
-        S = matrix_S(x, splits, order)
+        S = matrix_S(x, splits, order, continuous_deriv)
         constraints.append(S @ c == 0)
 
     if monotonic_trend:

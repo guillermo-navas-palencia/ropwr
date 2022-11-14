@@ -33,7 +33,7 @@ def matrix_A(x, splits, order):
     return A
 
 
-def matrix_S(x, splits, order):
+def matrix_S(x, splits, order, continuous_deriv):
     n_splits = len(splits)
     n_bins = n_splits + 1
 
@@ -45,7 +45,7 @@ def matrix_S(x, splits, order):
         S[i, order * i: order * (i + 1)] = r
         S[i, order * (i + 1): order * (i + 2)] = -r
 
-    if order >= 3:
+    if continuous_deriv and order >= 3:
         for m in range(1, order - 1):
             SD = np.zeros((n_splits, n_bins * order))
             d = np.zeros(order)
@@ -95,14 +95,14 @@ def matrix_A_D(x, splits, order):
         ni = len(xi)
 
         pxi = np.ones(ni)
-        qxi = None
+        qxi = np.ones(ni)
         for k, j in enumerate(range(order * i, order * (i + 1))):
             A[cn: cn + ni, j] = pxi
             if k <= 1:
                 D[cn: cn + ni, j] = k
             else:
+                qxi *= xi
                 D[cn: cn + ni, j] = k * qxi
-            qxi = pxi
             pxi *= xi
 
         cn += ni
@@ -194,14 +194,14 @@ def submatrix_A_D(ni, xi, order):
     Ai = np.zeros((ni, order))
     Di = np.zeros((ni, order))
     pxi = np.ones(ni)
-    qxi = None
+    qxi = np.ones(ni)
     for j in range(order):
         Ai[:, j] = pxi
         if j <= 1:
             Di[:, j] = j
         else:
+            qxi *= xi
             Di[:, j] = j * qxi
-        qxi = pxi
         pxi *= xi
 
     return Ai, Di

@@ -44,9 +44,9 @@ def _model_objective(A, c, y, objective, regularization, h_epsilon, quantile,
     return cp.Minimize(obj)
 
 
-def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
-         h_epsilon, quantile, regularization, reg_l1, reg_l2, solver, max_iter,
-         verbose):
+def socp(x, y, splits, degree, continuous, continuous_deriv, lb, ub, objective,
+         monotonic_trend, h_epsilon, quantile, regularization, reg_l1, reg_l2,
+         solver, max_iter, verbose):
 
     # Parameters
     n_bins = len(splits) + 1
@@ -84,7 +84,7 @@ def socp(x, y, splits, degree, continuous, lb, ub, objective, monotonic_trend,
     # Constraints
     constraints = []
     if n_bins > 1 and continuous:
-        S = matrix_S(x, splits, order)
+        S = matrix_S(x, splits, order, continuous_deriv)
         constraints.append(S @ c == 0)
 
     if monotonic_trend:

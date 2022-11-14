@@ -24,8 +24,8 @@ from .cvx_qp import qp_separated
 
 
 def _check_parameters(objective, regularization, degree, continuous,
-                      monotonic_trend, solver, h_epsilon, quantile, reg_l1,
-                      reg_l2, max_iter, verbose):
+                      continuous_deriv, monotonic_trend, solver, h_epsilon,
+                      quantile, reg_l1, reg_l2, max_iter, verbose):
 
     if objective not in ("l1", "l2", "huber", "quantile"):
         raise ValueError('Invalid value for objective. Allowed string '
@@ -41,7 +41,11 @@ def _check_parameters(objective, regularization, degree, continuous,
 
     if not isinstance(continuous, bool):
         raise TypeError("continuous must be a boolean; got {}."
-                        .format(verbose))
+                        .format(continuous))
+
+    if not isinstance(continuous_deriv, bool):
+        raise TypeError("continuous_deriv must be a boolean; got {}."
+                        .format(continuous_deriv))
 
     if monotonic_trend is not None:
         if monotonic_trend not in ("ascending", "descending", "convex",
@@ -234,6 +238,11 @@ class RobustPWRegression(BaseEstimator):
     continuous : bool (default=True)
         Whether to fit a continuous or discontinuous piecewise regression.
 
+    continuous_deriv : bool (default=False)
+        Whether to fit a polynomial with continuous derivatives. This option
+        fits a smooth degree d-polynomial with d-1 continuity in derivatives
+        (splines).
+
     monotonic_trend : str or None, optional (default=None)
         The monotonic trend. Supported trends are "ascending", "descending",
         "convex" and "concave". If None, then the monotonic constraint is
@@ -282,13 +291,14 @@ class RobustPWRegression(BaseEstimator):
         Coefficients for each bin. Number of bins = n_splits + 1.
     """
     def __init__(self, objective="l2", degree=1, continuous=True,
-                 monotonic_trend=None, solver="auto", h_epsilon=1.35,
-                 quantile=0.5, regularization=None, reg_l1=1.0, reg_l2=1.0,
-                 max_iter=None, verbose=False):
+                 continuous_deriv=False, monotonic_trend=None, solver="auto",
+                 h_epsilon=1.35, quantile=0.5, regularization=None, reg_l1=1.0,
+                 reg_l2=1.0, max_iter=None, verbose=False):
 
         self.objective = objective
         self.degree = degree
         self.continuous = continuous
+        self.continuous_deriv = continuous_deriv
         self.monotonic_trend = monotonic_trend
         self.solver = solver
         self.h_epsilon = h_epsilon
@@ -361,23 +371,25 @@ class RobustPWRegression(BaseEstimator):
                                  self.regularization)
 
         if _method == "lsq_direct":
-            c, info = lsq_direct(xs, ys, splits, self.degree)
+            c, info = lsq_direct(xs, ys, splits, self.degree,
+                                 self.continuous_deriv)
         elif _method == "lsq_direct_separated":
             c, info = lsq_direct_separated(xs, ys, splits, self.degree)
         elif _method == "socp":
-            c, info = socp(xs, ys, splits, self.degree, self.continuous, lb,
-                           ub, self.objective, self.monotonic_trend,
-                           self.h_epsilon, self.quantile, self.regularization,
-                           self.reg_l1, self.reg_l2, self.solver,
-                           self.max_iter, self.verbose)
+            c, info = socp(xs, ys, splits, self.degree, self.continuous,
+                           self.continuous_deriv, lb, ub, self.objective,
+                           self.monotonic_trend, self.h_epsilon, self.quantile,
+                           self.regularization, self.reg_l1, self.reg_l2,
+                           self.solver, self.max_iter, self.verbose)
         elif _method == "socp_separated":
             c, info = socp_separated(xs, ys, splits, self.degree, lb, ub,
                                      self.objective, self.monotonic_trend,
                                      self.h_epsilon, self.quantile,
                                      self.solver, self.max_iter, self.verbose)
         elif _method == "qp":
-            c, info = qp(xs, ys, splits, self.degree, self.continuous, lb, ub,
-                         self.monotonic_trend, self.max_iter, self.verbose)
+            c, info = qp(xs, ys, splits, self.degree, self.continuous,
+                         self.continuous_deriv, lb, ub, self.monotonic_trend,
+                         self.max_iter, self.verbose)
         elif _method == "qp_separated":
             c, info = qp_separated(xs, ys, splits, self.degree, lb, ub,
                                    self.monotonic_trend, self.max_iter,

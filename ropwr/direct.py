@@ -13,13 +13,13 @@ from .matrices import matrix_S
 from .matrices import submatrix_A
 
 
-def lsq_direct(x, y, splits, degree):
+def lsq_direct(x, y, splits, degree, continuous_deriv):
     order = degree + 1
     n_splits = len(splits)
     n_bins = n_splits + 1
 
     A = matrix_A(x, splits, order)
-    S = matrix_S(x, splits, order)
+    S = matrix_S(x, splits, order, continuous_deriv)
 
     nA = n_bins * order
     nM = nA + S.shape[0]
