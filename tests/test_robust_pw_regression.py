@@ -11,11 +11,16 @@ from pytest import approx, raises
 
 from ropwr import RobustPWRegression
 from ropwr.base import _choose_method
-from sklearn.datasets import load_boston
 from sklearn.exceptions import NotFittedError
 
 
-X, y = load_boston(return_X_y=True)
+def load_boston():
+    X = np.genfromtxt('tests/datasets/boston.csv', skip_header=1,
+                      delimiter=',')
+    return X[:, :-1], X[:, -1]
+
+
+X, y = load_boston()
 x = X[:, -1]
 
 
