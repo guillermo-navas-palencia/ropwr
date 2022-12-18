@@ -19,5 +19,5 @@ optimization problems. Other formulations are solved using a direct approach.
 
    installation
    release_notes
-   tutorials/tutorial
+   tutorials
    api

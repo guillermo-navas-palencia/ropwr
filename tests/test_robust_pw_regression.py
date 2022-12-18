@@ -11,11 +11,16 @@ from pytest import approx, raises
 
 from ropwr import RobustPWRegression
 from ropwr.base import _choose_method
-from sklearn.datasets import load_boston
 from sklearn.exceptions import NotFittedError
 
 
-X, y = load_boston(return_X_y=True)
+def load_boston():
+    X = np.genfromtxt('tests/datasets/boston.csv', skip_header=1,
+                      delimiter=',')
+    return X[:, :-1], X[:, -1]
+
+
+X, y = load_boston()
 x = X[:, -1]
 
 
@@ -34,6 +39,10 @@ def test_params():
 
     with raises(TypeError):
         pw = RobustPWRegression(continuous=1)
+        pw.fit(x, y, splits=[5, 10, 15])
+
+    with raises(TypeError):
+        pw = RobustPWRegression(continuous_deriv=1)
         pw.fit(x, y, splits=[5, 10, 15])
 
     with raises(ValueError):
@@ -62,6 +71,30 @@ def test_params():
 
     with raises(ValueError):
         pw = RobustPWRegression(reg_l2=-0.5)
+        pw.fit(x, y, splits=[5, 10, 15])
+
+    with raises(ValueError):
+        pw = RobustPWRegression(max_iter=-1)
+        pw.fit(x, y, splits=[5, 10, 15])
+
+    with raises(ValueError):
+        pw = RobustPWRegression(extrapolation="new")
+        pw.fit(x, y, splits=[5, 10, 15])
+
+    with raises(TypeError):
+        pw = RobustPWRegression(extrapolation_bounds={})
+        pw.fit(x, y, splits=[5, 10, 15])
+
+    with raises(ValueError):
+        pw = RobustPWRegression(extrapolation_bounds=(1,))
+        pw.fit(x, y, splits=[5, 10, 15])
+
+    with raises(ValueError):
+        pw = RobustPWRegression(space="loglinear")
+        pw.fit(x, y, splits=[5, 10, 15])
+
+    with raises(ValueError):
+        pw = RobustPWRegression(extrapolation="linear", space="log")
         pw.fit(x, y, splits=[5, 10, 15])
 
     with raises(TypeError):
@@ -211,8 +244,8 @@ def test_solver_ecos():
     # Monotonic trend: descending
     for degree in (0, 1, 2):
         pw = RobustPWRegression(
-            solver="ecos", objective="l1", degree=degree,
-            monotonic_trend="descending")
+            solver="ecos", objective="l1", continuous_deriv=False,
+            degree=degree, monotonic_trend="descending")
         pw.fit(x, y, splits)
 
         pred = pw.predict(np.sort(x))
@@ -221,7 +254,8 @@ def test_solver_ecos():
 
     # Monotonic trend: descending + continuous=False
     pw = RobustPWRegression(solver="ecos", objective="huber", degree=1,
-                            monotonic_trend="descending", continuous=False)
+                            monotonic_trend="descending", continuous=False,
+                            continuous_deriv=False)
     pw.fit(x, y, splits)
     assert np.all(pw.coef_[:, 1] <= 0)
 
@@ -299,7 +333,7 @@ def test_solver_highs():
     for degree in (0, 1, 2):
         pw = RobustPWRegression(
             solver="highs", objective="l1", degree=degree,
-            monotonic_trend="descending")
+            monotonic_trend="descending", continuous_deriv=False)
         pw.fit(x, y, splits)
 
         pred = pw.predict(np.sort(x))
@@ -329,7 +363,7 @@ def test_solver_scs():
     for degree in (0, 1, 2):
         pw = RobustPWRegression(
             solver="scs", objective="l1", degree=degree,
-            monotonic_trend="descending")
+            monotonic_trend="descending", continuous_deriv=False)
         pw.fit(x, y, splits)
 
         pred = pw.predict(np.sort(x))
@@ -418,11 +452,70 @@ def test_predict_bounds():
     splits = [5, 10, 15, 20]
     x = X[:, -1]
 
-    pw = RobustPWRegression()
+    pw = RobustPWRegression(extrapolation_bounds=(5, 50))
     pw.fit(x, y, splits)
 
-    pred = pw.predict(x, lb=5, ub=50)
+    pred = pw.predict(x)
     np.all((5 <= pred) & (pred <= 50))
+
+
+def test_interpolation_linear():
+    x = [0, 2.,   3.,  3.9, 5.,  7,  10]
+    y = [1, 0.92, 0.9, 0.8, 0.7, 0.6, 0.5]
+
+    pw = RobustPWRegression(degree=2, solver="osqp",
+                            monotonic_trend="descending",
+                            continuous_deriv=True,
+                            extrapolation="continue",
+                            extrapolation_bounds=(0, 1))
+
+    pw.fit(x, y, splits=x)
+    assert pw.predict(np.array([12])) == approx(0.49619792, rel=1e-6)
+
+    pw = RobustPWRegression(degree=2, solver="ecos",
+                            monotonic_trend="descending",
+                            continuous_deriv=True,
+                            extrapolation="linear",
+                            extrapolation_bounds=(0, 1))
+
+    pw.fit(x, y, splits=x)
+    assert pw.predict(np.array([12])) == approx(0.55558441, rel=1e-6)
+
+
+def test_interpolation_log():
+    x = [0,  2.,   3.,  3.9, 5.,  7,  10]
+    y = [-1, 0.92, 0.9, 0.8, 0.7, 0.6, 0.5]
+
+    pw = RobustPWRegression(degree=3, solver="ecos",
+                            monotonic_trend="descending",
+                            continuous_deriv=True,
+                            extrapolation="continue",
+                            extrapolation_bounds=(0, 1), space="log")
+
+    with raises(ValueError):
+        pw.fit(x, y, splits=x)
+
+    y = [1, 0.92, 0.9, 0.8, 0.7, 0.6, 0.5]
+    pw.fit(x, y, splits=x)
+    assert pw.predict(np.array([12])) == approx(0.18302127, rel=1e-6)
+
+    pw.fit(x, y, splits=x, lb=1e-4, ub=1.0)
+    assert pw.predict(np.array([12])) == approx(0.4165408, rel=1e-6)
+
+
+def test_extrapolation_none():
+    x = [0, 2.,   3.,  3.9, 5.,  7,  10]
+    y = [1, 0.92, 0.9, 0.8, 0.7, 0.6, 0.5]
+
+    pw = RobustPWRegression(degree=2, solver="osqp",
+                            monotonic_trend="descending",
+                            continuous_deriv=True,
+                            extrapolation=None)
+
+    pw.fit(x, y, splits=x)
+
+    with raises(ValueError):
+        pw.predict(np.array([11, 12]))
 
 
 def test_status():

@@ -25,17 +25,22 @@ def compute_change_point(x, y, splits, order, monotonic_trend):
     indices = np.searchsorted(splits, x, side='right')
 
     mean = [y[indices == i].mean() for i in range(n_bins)]
+
     if monotonic_trend == "peak":
         change_point = np.argmax(mean)
     else:
         change_point = np.argmin(mean)
 
-    if order > 2:
-        if change_point >= n_splits:
-            change_point = n_splits - 1
-        change_point = np.searchsorted(x, splits[change_point], side='right')
+    if change_point >= n_splits:
+        change_point = n_splits - 1
 
-    return change_point + 1
+    if order > 2:
+        change_point = np.searchsorted(x, splits[change_point], side='right')
+        cp_idx = change_point + 1
+    else:
+        cp_idx = np.searchsorted(x, splits[change_point], side='right')
+
+    return change_point + 1, cp_idx - 1
 
 
 def problem_info(status, size_metrics):

@@ -1,6 +1,22 @@
 Release Notes
 =============
 
+Version 1.0.0 (2022-12-18)
+--------------------------
+
+New features:
+
+   - Implement continuous derivative at split points (`Issue 7 <https://github.com/guillermo-navas-palencia/ropwr/issues/7>`_).
+   - Implement extrapolation methods.
+   - Add parameter ``max_iter`` to control the maximum number of iterations for solvers.
+   - Add y-space linear or logarithmic transformation via parameter ``space``.
+
+Improvements
+
+   - Improve formulation for lower and upper bound constraints when monotonicity constraints are active.
+   - Improve computation of problem matrices.
+
+
 Version 0.4.0 (2022-10-25)
 --------------------------
 
