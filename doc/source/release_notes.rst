@@ -13,7 +13,7 @@ New features:
 
 Improvements
 
-   - Improve formulation for lower and upper bound constraints when monotonicity constraints are actived.
+   - Improve formulation for lower and upper bound constraints when monotonicity constraints are active.
    - Improve computation of problem matrices.
 
 

@@ -315,14 +315,14 @@ class RobustPWRegression(BaseEstimator):
         If None, an exception is raised if values outside the range (min, max)
         of the fitting. If 'constant', the value of the regression at min, max
         value of the fitting is used for constant extrapolation. If 'continue',
-        the regression is extrapolated as is.
+        the regression is extrapolated as is. If 'linear', a linear
+        extrapolation is used.
 
         .. versionadded:: 1.0.0
 
     extrapolation_bounds : tuple or None (default=None)
-        If tuple ``(lb, ub)`` and ``extrapolation='continue'``, the regression
-        is limited to values within bounds. If None, the regression prediction
-        is not limited.
+        If tuple ``(lb, ub)``, the regression prediction is limited to values
+        within bounds. If None, the regression prediction is not limited.
 
         .. versionadded:: 1.0.0
 
@@ -533,6 +533,10 @@ class RobustPWRegression(BaseEstimator):
 
         y_min, y_max = None, None
         lb, ub = -np.inf, np.inf
+
+        if self.extrapolation is None:
+            if np.any((x < self._min_x) | (x > self._max_x)):
+                raise ValueError("x outside interpolation range.")
 
         if self.extrapolation in ("constant", "linear"):
             # Calculate predict(min_x) and predict(max_x)

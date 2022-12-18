@@ -503,6 +503,21 @@ def test_interpolation_log():
     assert pw.predict(np.array([12])) == approx(0.4165408, rel=1e-6)
 
 
+def test_extrapolation_none():
+    x = [0, 2.,   3.,  3.9, 5.,  7,  10]
+    y = [1, 0.92, 0.9, 0.8, 0.7, 0.6, 0.5]
+
+    pw = RobustPWRegression(degree=2, solver="osqp",
+                            monotonic_trend="descending",
+                            continuous_deriv=True,
+                            extrapolation=None)
+
+    pw.fit(x, y, splits=x)
+
+    with raises(ValueError):
+        pw.predict(np.array([11, 12]))
+
+
 def test_status():
     pw = RobustPWRegression()
     pw.fit(x, y, splits=[5, 10, 15, 20])
