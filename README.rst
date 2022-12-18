@@ -52,7 +52,7 @@ RoPWR requires
 Getting started
 ===============
 
-Please visit the RoPWR documentation (**current** release) http://gnpalencia.org/ropwr/. You can get started following the `tutorial <http://gnpalencia.org/ropwr/tutorials/tutorial.html>`_ and checking the API reference.
+Please visit the RoPWR documentation (**current** release) http://gnpalencia.org/ropwr/. You can get started following the `tutorials <http://gnpalencia.org/ropwr/tutorials.html>`_ and checking the API reference.
 
 Examples
 --------
