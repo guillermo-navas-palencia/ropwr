@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 
 import os
-import sys
 
 from setuptools import find_packages, setup, Command
-from setuptools.command.test import test as TestCommand
-
 
 long_description = '''
 **RoPWR** is a library written in Python implementing several mathematical
@@ -31,20 +28,6 @@ class CleanCommand(Command):
         os.system('rm -vrf ./build ./dist ./*.pyc ./*.tgz ./*.egg-info')
 
 
-# test suites
-class PyTest(TestCommand):
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = []
-
-    def run_tests(self):
-        # import here, because outside the eggs aren't loaded
-        import pytest
-        errcode = pytest.main(self.test_args)
-        sys.exit(errcode)
-
-
 # install requirements
 install_requires = [
     'cvxpy>=1.1.14',
@@ -54,10 +37,10 @@ install_requires = [
 ]
 
 # test requirements
-tests_require = [
-    'pytest',
-    'coverage'
-]
+extras_require = {
+    'test': ['pytest', 'coverage'],
+    'ecos': ['ecos'],
+}
 
 
 # Read version file
@@ -78,10 +61,10 @@ setup(
     include_package_data=True,
     license="Apache Licence 2.0",
     url="https://github.com/guillermo-navas-palencia/ropwr",
-    cmdclass={'clean': CleanCommand, 'test': PyTest},
+    cmdclass={'clean': CleanCommand},
     python_requires='>=3.7',
     install_requires=install_requires,
-    tests_require=tests_require,
+    extras_require=extras_require,
     classifiers=[
         'Topic :: Scientific/Engineering :: Mathematics',
         'Topic :: Software Development :: Libraries',
