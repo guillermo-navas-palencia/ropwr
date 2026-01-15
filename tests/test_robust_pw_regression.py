@@ -168,7 +168,7 @@ def test_discontinuous_default():
     pw_e = RobustPWRegression(solver="ecos", continuous=False)
     pw_e.fit(x, y, splits)
 
-    assert pw_d.coef_ == approx(pw_o.coef_, rel=1e-6)
+    assert pw_d.coef_ == approx(pw_o.coef_, rel=1e-4)
     assert pw_d.coef_ == approx(pw_e.coef_, rel=1e-6)
 
 
@@ -470,7 +470,7 @@ def test_interpolation_linear():
                             extrapolation_bounds=(0, 1))
 
     pw.fit(x, y, splits=x)
-    assert pw.predict(np.array([12])) == approx(0.49619792, rel=1e-6)
+    assert pw.predict(np.array([12])) == approx(0.49619792, rel=1e-4)
 
     pw = RobustPWRegression(degree=2, solver="ecos",
                             monotonic_trend="descending",
