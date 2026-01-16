@@ -224,7 +224,7 @@ def _check_splits(x, splits, n_bins, monotonic_trend):
             return splits
         else:
             user_splits = check_array(splits, ensure_2d=False,
-                                      force_all_finite=True)
+                                      ensure_all_finite=True)
 
             if len(set(user_splits)) != len(user_splits):
                 raise ValueError("splits are not unique.")
@@ -405,8 +405,8 @@ class RobustPWRegression(BaseEstimator):
         _check_parameters(**self.get_params())
 
         # Check inputs x and y
-        x = check_array(x, ensure_2d=False, force_all_finite=True)
-        y = check_array(y, ensure_2d=False, force_all_finite=True)
+        x = check_array(x, ensure_2d=False, ensure_all_finite=True)
+        y = check_array(y, ensure_2d=False, ensure_all_finite=True)
         check_consistent_length(x, y)
 
         if self.space == "log":

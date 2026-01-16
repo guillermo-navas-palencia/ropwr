@@ -32,13 +32,13 @@ class CleanCommand(Command):
 install_requires = [
     'cvxpy>=1.1.14',
     'numpy>=1.16',
-    'scikit-learn>=0.22',
+    'scikit-learn>=1.6.0',
     'scipy>=1.6.1'
 ]
 
 # test requirements
 extras_require = {
-    'test': ['pytest', 'coverage'],
+    'test': ['pytest', 'coverage', "flake8"],
     'ecos': ['ecos'],
 }
 
@@ -62,7 +62,7 @@ setup(
     license="Apache Licence 2.0",
     url="https://github.com/guillermo-navas-palencia/ropwr",
     cmdclass={'clean': CleanCommand},
-    python_requires='>=3.7',
+    python_requires='>=3.9',
     install_requires=install_requires,
     extras_require=extras_require,
     classifiers=[
@@ -73,5 +73,11 @@ setup(
         'Intended Audience :: Education',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
-        'Programming Language :: Python :: 3']
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
+    ]
     )
