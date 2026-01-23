@@ -1,6 +1,24 @@
 Release Notes
 =============
 
+Version 1.2.0 (2026-01-23)
+--------------------------
+
+New features:
+
+   - Add support to Clarabel solver (default solver in CVXPY for SOCP). Default solver if ``solver="auto"``.
+
+Improvements:
+
+- Replace deprecated ``force_all_finite`` with ``ensure_all_finite`` in ropwr to support scikit-learn 1.6+ (`Issue 17 <https://github.com/guillermo-navas-palencia/ropwr/issues/17>`_).
+
+
+Version 1.1.0 (2024-10-28)
+--------------------------
+
+Packaging improvements (`Issue 14 <https://github.com/guillermo-navas-palencia/ropwr/pull/14>`_).
+
+
 Version 1.0.0 (2022-12-18)
 --------------------------
 

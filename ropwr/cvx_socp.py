@@ -112,8 +112,10 @@ def socp(x, y, splits, degree, continuous, continuous_deriv, lb, ub, objective,
     # Solve
     prob = cp.Problem(obj, constraints)
 
-    if solver in ("auto", "ecos", "scs"):
-        if solver in ("auto", "ecos"):
+    if solver in ("auto", "clarabel", "ecos", "scs"):
+        if solver in ("auto", "clarabel"):
+            solve_options = {'solver': cp.CLARABEL, 'verbose': verbose}
+        elif solver == "ecos":
             solve_options = {'solver': cp.ECOS, 'verbose': verbose}
         else:
             solve_options = {'solver': cp.SCS, 'verbose': verbose}
@@ -139,8 +141,10 @@ def socp_separated(x, y, splits, degree, lb, ub, objective,
                    monotonic_trend, h_epsilon, quantile, solver, max_iter,
                    verbose):
 
-    if solver in ("auto", "ecos", "scs"):
-        if solver in ("auto", "ecos"):
+    if solver in ("auto", "clarabel", "ecos", "scs"):
+        if solver in ("auto", "clarabel"):
+            solve_options = {'solver': cp.CLARABEL, 'verbose': verbose}
+        elif solver == "ecos":
             solve_options = {'solver': cp.ECOS, 'verbose': verbose}
         else:
             solve_options = {'solver': cp.SCS, 'verbose': verbose}

@@ -30,7 +30,7 @@ class CleanCommand(Command):
 
 # install requirements
 install_requires = [
-    'cvxpy>=1.1.14',
+    'cvxpy>=1.6',
     'numpy>=1.16',
     'scikit-learn>=1.6.0',
     'scipy>=1.6.1'

@@ -153,8 +153,12 @@ def test_continuous_default():
     pw_e = RobustPWRegression(solver="ecos")
     pw_e.fit(x, y, splits)
 
+    pw_c = RobustPWRegression(solver="clarabel")
+    pw_c.fit(x, y, splits)
+
     assert pw_d.coef_ == approx(pw_o.coef_, rel=1e-6)
     assert pw_d.coef_ == approx(pw_e.coef_, rel=1e-6)
+    assert pw_d.coef_ == approx(pw_c.coef_, rel=1e-6)
 
 
 def test_discontinuous_default():
@@ -168,8 +172,12 @@ def test_discontinuous_default():
     pw_e = RobustPWRegression(solver="ecos", continuous=False)
     pw_e.fit(x, y, splits)
 
+    pw_c = RobustPWRegression(solver="clarabel", continuous=False)
+    pw_c.fit(x, y, splits)
+
     assert pw_d.coef_ == approx(pw_o.coef_, rel=1e-4)
     assert pw_d.coef_ == approx(pw_e.coef_, rel=1e-6)
+    assert pw_d.coef_ == approx(pw_c.coef_, rel=1e-6)
 
 
 def test_solver_direct():
@@ -392,6 +400,49 @@ def test_solver_scs():
         for degree in (1, 2):
             print(monotonic_trend, degree)
             pw = RobustPWRegression(solver="scs", degree=degree,
+                                    monotonic_trend=monotonic_trend)
+            pw.fit(x, y, splits, lb=5, ub=50)
+            pred = pw.predict(x)
+            assert np.all((5 <= pred) & (pred <= 50))
+
+
+def test_solver_clarabel():
+    splits = [5, 10, 15, 20]
+    x = X[:, -1]
+
+    # Monotonic trend: descending
+    for degree in (0, 1, 2):
+        pw = RobustPWRegression(
+            solver="clarabel", objective="l1", degree=degree,
+            monotonic_trend="descending", continuous_deriv=False)
+        pw.fit(x, y, splits)
+
+        pred = pw.predict(np.sort(x))
+        diff = np.max(pred[1:] - pred[:-1])
+        assert diff <= 1e-3
+
+    # Monotonic trend: descending + continuous=False
+    pw = RobustPWRegression(solver="clarabel", objective="huber", degree=1,
+                            monotonic_trend="descending", continuous=False)
+    pw.fit(x, y, splits)
+    assert np.all(pw.coef_[:, 1] <= 0)
+
+    # Bounds
+    x = X[:, 2]
+    for continuous in (True, False):
+        for degree in (1, 2):
+            pw = RobustPWRegression(solver="clarabel", objective="quantile",
+                                    degree=degree, quantile=0.4,
+                                    monotonic_trend="descending",
+                                    continuous=continuous)
+            pw.fit(x, y, splits, lb=5, ub=50)
+            pred = pw.predict(x)
+            assert np.all((5 <= pred) & (pred <= 50))
+
+    for monotonic_trend in ("descending", "convex", "peak", "valley"):
+        for degree in (1, 2):
+            print(monotonic_trend, degree)
+            pw = RobustPWRegression(solver="clarabel", degree=degree,
                                     monotonic_trend=monotonic_trend)
             pw.fit(x, y, splits, lb=5, ub=50)
             pred = pw.predict(x)

@@ -60,10 +60,10 @@ def _check_parameters(objective, regularization, degree, continuous,
             raise ValueError('Option monotonic trend "convex", "concave", '
                              '"peak" and "valley" valid if continuous=True.')
 
-    if solver not in ("auto", "ecos", "osqp", "direct", "scs", "highs"):
-        raise ValueError('Invalid value for solver. Allowed string '
-                         'values are "auto", "ecos", "osqp", "direct", '
-                         '"scs" and "highs".')
+    solvers = ("auto", "clarabel", "ecos", "osqp", "direct", "scs", "highs")
+    if solver not in solvers:
+        raise ValueError(f'Invalid value for solver. Allowed string '
+                         f'values are {solvers}.')
 
     if not isinstance(h_epsilon, numbers.Number) or h_epsilon < 1.0:
         raise ValueError("h_epsilon must a number >= 1.0; got {}."
@@ -161,7 +161,7 @@ def _choose_method(objective, degree, continuous, monotonic_trend, solver,
         else:
             raise ValueError('solver="osqp" only for objective="l2" and '
                              'regularization=None.')
-    elif solver in ("ecos", "scs"):
+    elif solver in ("clarabel", "ecos", "scs"):
         if continuous or degree == 0:
             return "socp"
         else:
@@ -207,9 +207,12 @@ def _check_splits(x, splits, n_bins, monotonic_trend):
             raise ValueError("n_bins must >= 2.")
 
         if n_bins is None:
-            est = KBinsDiscretizer(strategy=splits)
+            est = KBinsDiscretizer(
+                strategy=splits, quantile_method="averaged_inverted_cdf")
         else:
-            est = KBinsDiscretizer(n_bins=n_bins, strategy=splits)
+            est = KBinsDiscretizer(
+                n_bins=n_bins, strategy=splits,
+                quantile_method="averaged_inverted_cdf")
 
         est.fit(x.reshape(-1, 1))
         return est.bin_edges_[0][1:-1]

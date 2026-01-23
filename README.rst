@@ -18,7 +18,7 @@ The **RoPWR** library implements several mathematical programming formulations
 to compute the optimal continuous/discontinuous piecewise polynomial regression
 given a list of split points. It supports several monotonic constraints, 
 objective functions and regularizations. The library is written in Python and
-relies on cvxpy (ECOS, OSQP, SCS and HIGHS solvers) to solve the underlying optimization
+relies on cvxpy (CLARABEL, ECOS, OSQP, SCS and HIGHS solvers) to solve the underlying optimization
 problems. Other formulations are solved using a direct approach.
 
 .. contents:: **Table of Contents**
@@ -44,7 +44,7 @@ Dependencies
 ------------
 RoPWR requires
 
-* cvxpy (>=1.1.14)
+* cvxpy (>=1.6)
 * numpy (>=1.16)
 * scikit-learn (>=1.6.0)
 * scipy (>=1.6.1)
@@ -77,7 +77,7 @@ To devise split points, we use the implementation of the unsupervised technique 
    from sklearn.preprocessing import KBinsDiscretizer
    from ropwr import RobustPWRegression
 
-   est = KBinsDiscretizer(n_bins=10, strategy="quantile")
+   est = KBinsDiscretizer(n_bins=10, strategy="quantile", quantile_method="averaged_inverted_cdf")
    est.fit(x.reshape(-1, 1), y)
    splits = est.bin_edges_[0][1:-1]
 
@@ -129,14 +129,14 @@ regularization term (l1-Lasso or l2-Ridge). Additionally, it permits imposing a 
    data = fetch_california_housing()
    df = pd.DataFrame(data.data, columns=data.feature_names)
    x = df["MedInc"].values
-   y = df["target"].values
+   y = data['target']
 
-   est = KBinsDiscretizer(n_bins=15, strategy="quantile")
+   est = KBinsDiscretizer(n_bins=15, strategy="quantile", quantile_method="averaged_inverted_cdf")
    est.fit(x.reshape(-1, 1), y)
    splits = est.bin_edges_[0][1:-1]
 
    pw = RobustPWRegression(objective="huber", monotonic_trend="ascending",
-                           degree=2, regularization="l1", verbose=True)
+                           degree=2, regularization="l1", solver="ecos", verbose=True)
    pw.fit(x, y, splits, lb=1, ub=5)
 
 .. code-block:: text
